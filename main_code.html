@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<head>
+
+  <!-- add title -->
+  <title>Enerdata Choropleth</title>
+
+   <!-- import required libraries here -->
+  <script type="text/javascript" src="lib/d3.v5.min.js"></script>
+  <script type="text/javascript" src="lib/d3-dsv.min.js"></script>
+  <script type="text/javascript" src="lib/d3-geo-projection.v2.min.js"></script>
+  <script type="text/javascript" src="lib/topojson.v2.min.js"></script>
+
+	<style>
+	  /* define CSS rules here */
+	
+	</style>
+</head>
+
+
+<body>
+    <!-- Add heading for the visualization (Define Title) -->
+    <h1></h1>
+
+    <!-- append visualization svg to this div-->
+    <div id="choropleth" class="svg-container"></div>
+
+    <script>
+
+      // Define margin and dimensions for svg
+      var margin = {top: 50, right: 50, bottom: 50, left: 50};
+      var width = 1000 - margin.left - margin.right;
+      var height = 600 - margin.top - margin.bottom;
+	
+      // Create svg
+      var svg = d3.select("div#choropleth").append("svg")
+	.attr("width", width + margin.left + margin.right)
+	.attr("height", height + margin.top + margin.bottom)
+		
+      // Define projection and path required for Choropleth
+      var projection = d3.geoEquirectangular().scale(200);
+      var geoGenerator = d3.geoPath()
+  	.projection(projection);
+
+      // Global variables 
+      var us = d3.json("united_states.json");
+   
+      Promise.all([us]).then(result => ready(result[0]))
+	.catch(error => console.log(`Error in executing ${error}`));
+
+      // Code to call ready() with required arguments
+      function ready(us){
+		
+          // Create Choropleth by calling createMap() with required arguments.
+	  createMap(us);
+      }
+
+      function createMap(us){ 
+
+	  // Add map
+	svg.selectAll("*").remove()
+	svg.append("g")
+	  .selectAll("path")
+	  .data(us.features)
+	  .enter().append("path")
+	  .attr("fill", "mediumseagreen")
+	  .attr("d", geoGenerator)		
+     }
+
+    </script>
+
+</body>
+
+</html>

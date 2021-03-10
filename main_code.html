@@ -38,24 +38,25 @@
 	.attr("height", height + margin.top + margin.bottom)
 		
       // Define projection and path required for Choropleth
-      var projection = d3.geoEquirectangular().scale(200);
+      var projection = d3.geoEquirectangular();
       var geoGenerator = d3.geoPath()
   	.projection(projection);
 
       // Global variables 
       var us = d3.json("united_states.json");
+      var energy = d3.json("energy.json");
    
-      Promise.all([us]).then(result => ready(result[0]))
+      Promise.all([us, energy]).then(result => ready(result[0], result[1]))
 	.catch(error => console.log(`Error in executing ${error}`));
 
       // Code to call ready() with required arguments
-      function ready(us){
+      function ready(us, energy){
 		
           // Create Choropleth by calling createMap() with required arguments.
-	  createMap(us);
+	  createMap(us, energy);
       }
 
-      function createMap(us){ 
+      function createMap(us, energy){ 
 
 	  // Add map
 	svg.selectAll("*").remove()
@@ -64,7 +65,16 @@
 	  .data(us.features)
 	  .enter().append("path")
 	  .attr("fill", "mediumseagreen")
-	  .attr("d", geoGenerator)		
+	  .attr("d", geoGenerator)
+
+	svg.append( "g" )
+         .selectAll( "path" )
+	 .data( energy.features )
+	 .enter()
+	 .append( "path" )
+	 .attr( "fill", "grey" )
+	 .attr( "stroke", "#999" )
+	 .attr( "d", geoGenerator );		
      }
 
     </script>

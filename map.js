@@ -23,15 +23,11 @@ Promise.all([us, energy])
 
 // Code to call ready() with required arguments
 function ready(us, energy){
-	console.log("readY");
-	console.log(us);
-	console.log(energy);
 	// Create Choropleth by calling createMap() with required arguments.
 	createMap(us, energy);
 }
 
 function createMap(us, energy){ 
-	console.log(svg);
 	// Add map
 	svg.append("g")
 		.selectAll("path")

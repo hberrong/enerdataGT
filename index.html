@@ -11,11 +11,7 @@
   <script type="text/javascript" src="lib/d3-geo-projection.v2.min.js"></script>
   <script type="text/javascript" src="lib/topojson.v2.min.js"></script>
   
-
-	<style>
-	  /* define CSS rules here */
-	
-	</style>
+  <link rel="stylesheet" href="map.css"/>
 </head>
 
 
@@ -24,10 +20,16 @@
     <h1></h1>
 
     <!-- append visualization svg to this div-->
-    <div id="choropleth" class="svg-container"></div>
+    <div class="loader hidden"></div>
+    <div id="choropleth" class="svg-container">
+    </div>
+    <div>
+      <input type="checkbox" id="wind-selector" class="data-selector" value="wind"><label for="wind-selector">Wind</label>
+      <input type="checkbox" id="solar-selector" class="data-selector" value="solar" disabled="disabled"><label for="solar-selector" disabled="disabled">Solar</label>
+      <input type="checkbox" id="geothermal-selector" class="data-selector" value="geothermal"><label for="geothermal-selector">Geothermal</label>
+    </div>
 
   <script type="text/javascript" src="map.js"></script>
-  <link type="text/css" src="map.css"/>
 </body>
 
 </html>

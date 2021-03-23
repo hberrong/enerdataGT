@@ -14,19 +14,27 @@
   <link rel="stylesheet" href="map.css"/>
 </head>
 
-
 <body>
     <!-- Add heading for the visualization (Define Title) -->
-    <h1></h1>
+    <!-- <h1>Enerdata</h1> -->
 
     <!-- append visualization svg to this div-->
     <div class="loader hidden"></div>
     <div id="choropleth" class="svg-container">
     </div>
-    <div>
-      <input type="checkbox" id="wind-selector" class="data-selector" value="wind"><label for="wind-selector">Wind</label>
-      <input type="checkbox" id="solar-selector" class="data-selector" value="solar" disabled="disabled"><label for="solar-selector" disabled="disabled">Solar</label>
-      <input type="checkbox" id="geothermal-selector" class="data-selector" value="geothermal"><label for="geothermal-selector">Geothermal</label>
+    <div id="map_overlay"></div>
+    <div id="data-selectors" class="card">
+      <p class="title">Load Data</p>
+      <ul class="card-body">
+        <li><input type="checkbox" id="wind-selector" class="data-selector" value="wind"><label for="wind-selector">Wind</label></li>
+        <li><input type="checkbox" id="solar-selector" class="data-selector" value="solar" disabled="disabled"><label for="solar-selector" disabled="disabled">Solar</label></li>
+        <li><input type="checkbox" id="geothermal-selector" class="data-selector" value="geothermal"><label for="geothermal-selector">Geothermal</label></li>
+      </ul>
+    </div>
+
+    <div id="new-sources" class="card">
+      <p class="title">Place New Source</p>
+      <img id="wind-source" class="new-source" src="images/wind.svg" alt="Wind">
     </div>
 
   <script type="text/javascript" src="map.js"></script>

@@ -1,8 +1,13 @@
 // Define margin and dimensions for svg
-const MARGIN = {TOP: 50, RIGHT: 50, BOTTOM: 50, LEFT: 50};
-const WIDTH = 1000 - MARGIN.LEFT - MARGIN.RIGHT;
-const HEIGHT = 600 - MARGIN.TOP - MARGIN.BOTTOM;
-const MAX_ZOOM = 100;
+// const SVG_MARGIN = {TOP: 0, RIGHT: 0, BOTTOM: 0, LEFT: 0};
+// const SVG_PADDING = {TOP: 0, RIGHT: 0, BOTTOM: 0, LEFT: 0};
+const SVG_SIZE = {
+	WIDTH: screen.availWidth,
+	HEIGHT: screen.availHeight
+};
+
+const ZOOM_CONSTRAINTS = [1.5, 100];
+const ZOOM_TRANSITION_SPEED = 750;
 
 const DATA_TO_FILENAME = {
 	"wind": "data/energy.json",
@@ -12,32 +17,41 @@ const DATA_TO_FILENAME = {
 // Variables
 var data_loaded = [];
 var map_loaded = false;
+var map_bounds;
 
 // Define projection and path required for Choropleth
 var projection = d3.geoAlbersUsa();
 var geoGenerator = d3.geoPath().projection(projection);
-var map_zoomer = d3.zoom().scaleExtent([1, MAX_ZOOM]).on("zoom", zoom_map);
+var map_zoomer = d3.zoom().scaleExtent(ZOOM_CONSTRAINTS).on("zoom", zoom_map);
 
 // Create svg
 var svg = d3.select("div#choropleth").append("svg")
-	.attr("width", WIDTH + MARGIN.LEFT + MARGIN.RIGHT)
-	.attr("height", HEIGHT + MARGIN.TOP + MARGIN.BOTTOM)
 	.call(map_zoomer)
 	.on("click", reset_zoom);
+const SVG_BOUNDS = svg.node().getBoundingClientRect();
+// console.log(SVG_BOUNDS)
 	
 var map_g = svg.append("g").attr("id", "map");
+var states_g = map_g.append("g").attr("id", "states");
 
 var data_selectors = d3.selectAll(".data-selector").on("click", select_data);
 
-// Position our loader
-var loader = d3.select(".loader").style("top", (svg.attr("height") / 2) - 40 + "px").style("left", (svg.attr("width") / 2) - 40 + "px");
+var new_source_icons = d3.selectAll(".new-source");
+new_source_icons.call(d3.drag()
+	.on("drag", drag_new_source)
+);
 
+// Position our loader
+var loader = d3.select(".loader")
+	.style("top", `${(SVG_SIZE.HEIGHT / 2) - 40}px`)
+	.style("left", `${(SVG_SIZE.WIDTH / 2) - 40}px`);
+	
 // Load map
 d3.json("united_states.json").then(d => createMap(d));
 
 function createMap(us) { 
 	// Add map
-	states = map_g.selectAll("path")
+	states = states_g.selectAll("path")
 		.data(us.features)
 		.enter()
 		.append("path")
@@ -46,38 +60,40 @@ function createMap(us) {
 		.attr("d", geoGenerator);
 
 	map_loaded = true;
+	map_bounds = geoGenerator.bounds(us);
+	reset_zoom(0);
 }
 
-function reset_zoom() {
+function reset_zoom(transition_speed=ZOOM_TRANSITION_SPEED) {
+	const [[x1, y1], [x2, y2]] = map_bounds;
 	states.classed("selected", false);
 	svg.transition()
-		.duration(400)
-		.call(map_zoomer.transform, d3.zoomIdentity);
+		.duration(transition_speed)
+		.call(map_zoomer.transform, d3.zoomIdentity.translate(SVG_SIZE.WIDTH / 2, SVG_SIZE.HEIGHT / 2).scale(1.5).translate((x1 + x2) / -2, (y1 + y2) / -2));
 }
 
 // https://observablehq.com/@d3/zoom-to-bounding-box?collection=@d3/d3-zoom
 function zoom_state(state, idx, ele) {
-	const [[x1, y1], [x2, y2]] = geoGenerator.bounds(state);
-	d3.event.stopPropagation();	// Prevent SVG from zooming out
-	states.classed("selected", false);				// Clear previous selection
-	d3.select(this).classed("selected", true);		// Can highlight state with this
-	svg.transition()
-		.duration(400)
-		.call(map_zoomer.transform, d3.zoomIdentity
-			.translate(WIDTH / 2, HEIGHT / 2)		// Place in center of SVG
-			.scale(Math.min(MAX_ZOOM, 0.9 / Math.max((x2 - x1) / WIDTH, (y2 - y1) / HEIGHT)))	// Zoom in on state
-			.translate((x1 + x2) / -2, (y1 + y2) / -2));	// Now move zoomed in state to center
+	var current_state = d3.select(this);
+	if (current_state.classed("selected")) {
+		reset_zoom();
+	} else {
+		const [[x1, y1], [x2, y2]] = geoGenerator.bounds(state);
+		d3.event.stopPropagation();	// Prevent SVG from zooming out
+		states.classed("selected", false);				// Clear previous selection
+		current_state.classed("selected", true);		// Can highlight state with this
+		svg.transition()
+			.duration(ZOOM_TRANSITION_SPEED)
+			.call(map_zoomer.transform, d3.zoomIdentity
+				.translate(SVG_SIZE.WIDTH / 2, SVG_SIZE.HEIGHT / 2)		// Place in center of SVG
+				.scale(Math.min(ZOOM_CONSTRAINTS[1], 0.6 / Math.max((x2 - x1) / SVG_SIZE.WIDTH, (y2 - y1) / SVG_SIZE.HEIGHT)))	// Zoom in on state
+				.translate((x1 + x2) / -2, (y1 + y2) / -2));	// Now move zoomed in state to center
+	}
 }
 
 function zoom_map(datum, idx, ele) {
 	map_g.attr("transform", d3.event.transform);
 	map_g.attr("stroke-width", 1 / d3.event.transform.k);  // Make sure stroke width stays consistent
-
-	// Now zoom in on any of our data
-	for (g of data_loaded) {
-		g.attr("transform", d3.event.transform);
-		g.attr("stroke-width", 1 / d3.event.transform.k);  // Make sure stroke width stays consistent
-	}
 }
 
 function select_data() {
@@ -93,7 +109,7 @@ function load_data(data_to_load) {
 	loader.classed("hidden", false);
 	filename = DATA_TO_FILENAME[data_to_load];
 	d3.json(filename).then(d => {
-		var g = svg.append("g")
+		var g = map_g.append("g")
 			.attr("id", data_to_load + "-data");
 
 		g.selectAll("path")
@@ -121,4 +137,13 @@ function remove_data(data_to_remove) {
 		data_loaded.splice(idx, 1);
 	}
 	// console.log(data_loaded);
+}
+
+function drag_new_source(datum, idx, ele) {
+	
+	// new_source.style("left", `${d3.event.x}px`);
+	// console.log(this);
+	// console.log(d3.event);
+	// ele.x = d3.event.x;
+	// console.log(d3.select(this));
 }

@@ -10,8 +10,9 @@ const ZOOM_CONSTRAINTS = [1.5, 100];
 const ZOOM_TRANSITION_SPEED = 750;
 
 const DATA_TO_FILENAME = {
-	"wind": "data/energy.json",
-	"geothermal": "data/geothermal2.json"
+	"powerplants": "data/powerplants.json",
+ 	"wind": "data/wind_resource.geojson",
+ 	"geothermal": "data/geothermal.json"
 }
 
 // Variables
@@ -30,7 +31,7 @@ var svg = d3.select("div#choropleth").append("svg")
 	.on("click", reset_zoom);
 const SVG_BOUNDS = svg.node().getBoundingClientRect();
 // console.log(SVG_BOUNDS)
-	
+
 var map_g = svg.append("g").attr("id", "map");
 var states_g = map_g.append("g").attr("id", "states");
 
@@ -41,15 +42,45 @@ new_source_icons.call(d3.drag()
 	.on("drag", drag_new_source)
 );
 
+//Define wind color scale
+var wind_color = d3.scaleQuantize()
+					.range(['#edf8e9','#c7e9c0','#a1d99b','#74c476','#31a354','#006d2c']);
+
+//Define geothermal color scale
+var geothermal_color = d3.scaleOrdinal()
+.range(['#fff5f0','#fee0d2','#fcbba1','#fc9272',
+'#fb6a4a','#ef3b2c','#cb181d','#a50f15','#67000d']);
+
 // Position our loader
 var loader = d3.select(".loader")
 	.style("top", `${(SVG_SIZE.HEIGHT / 2) - 40}px`)
 	.style("left", `${(SVG_SIZE.WIDTH / 2) - 40}px`);
-	
+
+	// function to get max of array for color scales
+	function getMax(arr, prop) {
+		var max;
+		for (var i=0 ; i<arr.length ; i++) {
+			if (max == null || arr[i]['properties'][prop] > max)
+					max = arr[i]['properties'][prop];
+			}
+		return max;
+	}
+
+	// function to get min of array for color scales
+	function getMin(arr, prop) {
+		var min;
+		for (var i=0 ; i<arr.length ; i++) {
+			if (min == null || arr[i]['properties'][prop] < min)
+					min = arr[i]['properties'][prop];
+			}
+		return min;
+	}
+
+
 // Load map
 d3.json("united_states.json").then(d => createMap(d));
 
-function createMap(us) { 
+function createMap(us) {
 	// Add map
 	states = states_g.selectAll("path")
 		.data(us.features)
@@ -61,7 +92,8 @@ function createMap(us) {
 
 	map_loaded = true;
 	map_bounds = geoGenerator.bounds(us);
-	reset_zoom(0);
+	reset_zoom(0)
+	load_plants('powerplants');
 }
 
 function reset_zoom(transition_speed=ZOOM_TRANSITION_SPEED) {
@@ -112,14 +144,29 @@ function load_data(data_to_load) {
 		var g = map_g.append("g")
 			.attr("id", data_to_load + "-data");
 
+			// set input domain for color scale
+			set_color_domain(d,data_to_load)
+
 		g.selectAll("path")
 			.data(d.features)
 			.enter()
 			.append("path")
-			.attr("fill", "blue")
-			.attr("stroke", "white")
+			.style("fill", function(d) {
+				//Get data value
+				var value = d.properties.capacity_mw;
+
+				if (value) {
+					//If value exists…
+					return wind_color(value);
+				} else {
+					//If value is undefined…
+					return "#ccc";
+				}
+
+			})
+			//.attr("stroke", "white")
 			.attr("d", geoGenerator);
-		
+
 		data_loaded.push(g);
 	}).catch(e => {
 		console.log(filename + " not found.\n" + e);
@@ -128,6 +175,65 @@ function load_data(data_to_load) {
 		loader.classed("hidden", true);
 	});
 }
+
+function set_color_domain(d,data_to_load){
+	if (data_to_load == "wind"){
+		return wind_color.domain([
+			getMax(d.features,'capacity_mw'),
+			getMin(d.features,'capacity_mw')
+		]);
+	} else if (data_to_load == "geothermal"){
+		return geothermal_color.domain([
+			'>15','10-15','5-10','4-5','3-4','2-3','1-2','0.5-1','0.1-0.5','<0.1'
+		]);
+
+	}
+}
+
+
+function load_plants(data_to_load) {
+	svg.classed("loading", true);
+	loader.classed("hidden", false);
+	filename = DATA_TO_FILENAME[data_to_load];
+	d3.json(filename).then(d => {
+		var g = map_g.append("g")
+			.attr("id", data_to_load + "-data");
+
+
+		g.selectAll("path")
+			.data(d.features)
+			.enter()
+			.append("image")
+			.attr('d',geoGenerator)
+			.attr('xlink:href',function(d) {return get_image(d.properties.capacity_b)})
+			.attr("transform", function(d)
+			{ return "translate(" + projection(d.geometry.coordinates) + ")"; })
+			.attr("width",10)
+			.attr("height",10)
+		svg.append("text")
+			.attr("x", 50)
+			.attr("y", 80)
+			.attr("class","text_labels")
+			.text("Capacity")
+
+			data_loaded.push(g);
+		}).catch(e => {
+			console.log(filename + " not found.\n" + e);
+		}).finally(() => {
+			svg.classed("loading", false);
+			loader.classed("hidden", true);
+		});
+	}
+
+	function get_image(capacity_b) {
+		// get the plant type as the string before the "=" of
+		// the capacity_b property
+		if (capacity_b !== null) {
+			var plant = capacity_b.split("=")[0].trim().split(" ").join("_")
+			//console.log(plant)
+			return 'images/' + plant + '.png'
+		}
+	}
 
 function remove_data(data_to_remove) {
 	var id = data_to_remove + "-data";
@@ -140,7 +246,7 @@ function remove_data(data_to_remove) {
 }
 
 function drag_new_source(datum, idx, ele) {
-	
+
 	// new_source.style("left", `${d3.event.x}px`);
 	// console.log(this);
 	// console.log(d3.event);

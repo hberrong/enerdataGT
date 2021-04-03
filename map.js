@@ -198,6 +198,9 @@ function load_plants(data_to_load) {
 	d3.json(filename).then(d => {
 		var g = map_g.append("g")
 			.attr("id", data_to_load + "-data");
+console.log(d.features[100])
+
+
 
 
 		g.selectAll("path")
@@ -210,11 +213,7 @@ function load_plants(data_to_load) {
 			{ return "translate(" + projection(d.geometry.coordinates) + ")"; })
 			.attr("width",10)
 			.attr("height",10)
-		svg.append("text")
-			.attr("x", 50)
-			.attr("y", 80)
-			.attr("class","text_labels")
-			.text("Capacity")
+		
 
 			data_loaded.push(g);
 		}).catch(e => {

@@ -169,8 +169,9 @@ function demandDashboard(data, state, year){
 }
 
 // Create energy generation dashboard
-var powerplants = d3.json("data/powerplants.json").then(generation => {
+var powerplants = d3.json("data/powerplants_cleaned.geojson").then(generation => {
     if(state_selected == "United States"){
+	// Get total energy
     	var total_generation = [];
     	generation.features.forEach(function(d) {
 		total_generation.push(d.properties.total_cap)
@@ -178,6 +179,26 @@ var powerplants = d3.json("data/powerplants.json").then(generation => {
     	// https://stackoverflow.com/questions/1230233/how-to-find-the-sum-of-an-array-of-numbers
     	sum_generation = total_generation.reduce(function(a,b) {return a+b;},0)
     	sum_generation = sum_generation*365*24 // conversion to MWh
+
+	// Get total renewable energy
+	filtered_renewables = generation.features.filter(function(d) {return d.properties.renewable == true; });
+	var total_renewable = [];
+	filtered_renewables.forEach(function(d) {
+		total_renewable.push(d.properties.total_cap)
+    	});
+    	sum_renewable = total_renewable.reduce(function(a,b) {return a+b;},0)
+    	sum_renewable = sum_renewable*365*24 // conversion to MWh
+
+	// Get total renewable energy
+	filtered_nonrenewables = generation.features.filter(function(d) {return d.properties.renewable == false; });
+	var total_nonrenewable = [];
+	filtered_nonrenewables.forEach(function(d) {
+		total_nonrenewable.push(d.properties.total_cap)
+    	});
+    	sum_nonrenewable = total_nonrenewable.reduce(function(a,b) {return a+b;},0)
+    	sum_nonrenewable = sum_nonrenewable*365*24 // conversion to MWh
+
+	// Add to the dashboard
 	d3.select("ul#generation").selectAll("*").remove()
   	d3.select("ul#generation").append("li")
 		.text("United States")
@@ -185,9 +206,9 @@ var powerplants = d3.json("data/powerplants.json").then(generation => {
 		// https://stackoverflow.com/questions/2901102/how-to-print-a-number-with-commas-as-thousands-separators-in-javascript
 		.text("Total Energy Produced: " + Math.round(sum_generation).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",") + " MWh")
 	d3.select("ul#generation").append("li")
-		.text("Total from Renewable Sources: To Be Included")
+		.text("Total from Renewable Sources: " + Math.round(sum_renewable).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",") + " MWh")
 	d3.select("ul#generation").append("li")
-		.text("Total from Non-Renewable Sources: To Be Included")
+		.text("Total from Non-Renewable Sources: " + Math.round(sum_nonrenewable).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",") + " MWh")
 	}
 	// Add code later for if state_selected is a specific state
 })
@@ -206,7 +227,8 @@ function createMap(us) {
 	map_loaded = true;
 	map_bounds = geoGenerator.bounds(us);
 	reset_zoom(0)
-	load_plants('powerplants');
+	load_plants("powerplants")
+	
 }
 
 function reset_zoom(transition_speed=ZOOM_TRANSITION_SPEED) {

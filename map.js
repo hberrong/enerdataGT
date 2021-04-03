@@ -36,7 +36,7 @@ var states_g = map_g.append("g").attr("id", "states");
 var data_selectors = d3.selectAll(".data-selector").on("click", select_data);
 var new_source_icons = d3.selectAll(".new-source");
 var state_selected = "United States"
-var selected_year = "2020"
+var selected_year = "1990"
 new_source_icons.call(d3.drag()
 	.on("drag", drag_new_source)
 );
@@ -57,7 +57,7 @@ var tip = d3.tip()
   	    .html(function(d) {
     	      return "<strong>Plant Name:</strong> <span style='color:white'>" + d.properties.plant_name + "</span><br>" + 
 	        "<strong>Owned by:</strong> <span style='color:white'>" + d.properties.utility_na + "</span><br>" +
-	        "<strong>Capacity:</strong> <span style='color:white'>" + d.properties.total_cap + "<strong>MW</strong>" + "</span>"
+	        "<strong>Capacity:</strong> <span style='color:white'>" + Math.round(d.properties.total_cap*365*24).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",") + "<strong> MWh</strong>" + "</span>"
   	    })
 
 svg.call(tip);
@@ -130,24 +130,25 @@ var demand = d3.dsv(",", "data/demand.csv", function(d) {
 	    });
 
     // all credits to https://stackoverflow.com/questions/1759987/listening-for-variable-changes-in-javascript
-    window.x = {
-    aInternal: state_selected,
-    aListener: function(val) {},
-    set a(val) {
-      this.aInternal = val;
-      this.aListener(val);
-    },
-    get a() {
-      return this.aInternal;
-    },
-    registerListener: function(listener) {
-      this.aListener = listener;
+     
+    window.state_listener = {
+      aInternal: state_selected,
+      aListener: function(val) {},
+      set a(val) {
+        this.aInternal = val;
+        this.aListener(val);
+      },
+      get a() {
+        return this.aInternal;
+      },
+      registerListener: function(listener) {
+        this.aListener = listener;
       }
-    }
-    x.registerListener(function(val) {
+      }
+    state_listener.registerListener(function(val) {
     demandDashboard(demand, val, selected_year);
     });
-  })
+})
 
 // Create demand dashboard - function
 function demandDashboard(data, state, year){
@@ -222,12 +223,12 @@ function zoom_state(state, idx, ele) {
 	
 	// Update state_selected, which will be used to update dashboards
 	state_selected = current_state['_groups'][0][0]['id'];
-	window.x.a = state_selected
+	window.state_listener.a = state_selected
 	
 	if (current_state.classed("selected")) {
 		reset_zoom();
 	        state_selected = "United States"
-		window.x.a = state_selected
+		window.state_listener.a = state_selected
 	} else {
 		const [[x1, y1], [x2, y2]] = geoGenerator.bounds(state);
 		d3.event.stopPropagation();	// Prevent SVG from zooming out
@@ -286,7 +287,7 @@ function load_data(data_to_load) {
 			//.attr("stroke", "white")
 			.attr("d", geoGenerator);
 
-    // Add tooltip if dataset is "powerplants":
+    		// Add tooltip if dataset is "powerplants":
 		if (filename == "data/powerplants.json") {
 			g.selectAll("path")
 			.on("mouseover", tip.show)
@@ -324,10 +325,6 @@ function load_plants(data_to_load) {
 	d3.json(filename).then(d => {
 		var g = map_g.append("g")
 			.attr("id", data_to_load + "-data");
-console.log(d.features[100])
-
-
-
 
 		g.selectAll("path")
 			.data(d.features)

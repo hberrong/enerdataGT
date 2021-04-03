@@ -10,7 +10,7 @@ const ZOOM_CONSTRAINTS = [1.5, 100];
 const ZOOM_TRANSITION_SPEED = 750;
 
 const DATA_TO_FILENAME = {
-	"wind": "data/energy.json",
+	"powerplants": "data/powerplants.json",
 	"geothermal": "data/geothermal2.json"
 }
 
@@ -29,17 +29,29 @@ var svg = d3.select("div#choropleth").append("svg")
 	.call(map_zoomer)
 	.on("click", reset_zoom);
 const SVG_BOUNDS = svg.node().getBoundingClientRect();
-// console.log(SVG_BOUNDS)
+
 	
 var map_g = svg.append("g").attr("id", "map");
 var states_g = map_g.append("g").attr("id", "states");
-
 var data_selectors = d3.selectAll(".data-selector").on("click", select_data);
-
 var new_source_icons = d3.selectAll(".new-source");
+var state_selected = "United States"
+var selected_year = "2020"
 new_source_icons.call(d3.drag()
 	.on("drag", drag_new_source)
 );
+
+// Define Tool Tip
+var tip = d3.tip()
+  	    .attr('class', 'd3-tip')
+  	    .offset([-10, 0])
+  	    .html(function(d) {
+    	      return "<strong>Plant Name:</strong> <span style='color:white'>" + d.properties.plant_name + "</span><br>" + 
+	        "<strong>Owned by:</strong> <span style='color:white'>" + d.properties.utility_na + "</span><br>" +
+	        "<strong>Capacity:</strong> <span style='color:white'>" + d.properties.total_cap + "<strong>MW</strong>" + "</span>"
+  	    })
+
+svg.call(tip);
 
 // Position our loader
 var loader = d3.select(".loader")
@@ -49,6 +61,107 @@ var loader = d3.select(".loader")
 // Load map
 d3.json("united_states.json").then(d => createMap(d));
 
+// Create demand dashboard - data preparation
+var demand = d3.dsv(",", "data/demand.csv", function(d) {
+    return {
+	year: d.YEAR,
+	st: d.ST,
+	state: d.STATE,
+	residential: d.RESIDENTIAL,
+	commercial: d.COMMERCIAL,
+	industrial: d.INDUSTRIAL,
+	other: d.OTHER,
+	transportation: d.TRANSPORTATION,
+	total: d.TOTAL
+  }}) 
+  .then(function (demand){
+
+    // Get a list with all the years from the dataset
+     var unique_years = new Set();
+     demand.forEach(function(d) {
+	  unique_years.add(d.year)
+	  })  
+     var years_list = [...unique_years];
+
+    // enter code to append the year options to the dropdown
+    d3.select("#selectButton")
+	    .selectAll("options")
+	    .data(years_list)
+	    .enter()
+	    .append("option")
+	    .text(function(d) {return d; })
+	    .attr("value", function(d) {return d; });
+			  
+    // event listener for the dropdown. Update demand dashboard when selection changes.
+    d3.select("#selectButton")
+	    .on("change", function(d) {
+		selected_year = d3.select(this).property("value")
+		demandDashboard(demand, state_selected, selected_year);
+	    });
+
+    // all credits to https://stackoverflow.com/questions/1759987/listening-for-variable-changes-in-javascript
+    window.x = {
+    aInternal: state_selected,
+    aListener: function(val) {},
+    set a(val) {
+      this.aInternal = val;
+      this.aListener(val);
+    },
+    get a() {
+      return this.aInternal;
+    },
+    registerListener: function(listener) {
+      this.aListener = listener;
+      }
+    }
+    x.registerListener(function(val) {
+    demandDashboard(demand, val, selected_year);
+    });
+  })
+
+// Create demand dashboard - function
+function demandDashboard(data, state, year){
+  filtered = data.filter(function(d) {return d.year == year & d.state == state; });
+  // https://www.codegrepper.com/code-examples/whatever/how+to+remove+dots+in+unordered+list+html
+  d3.select("ul#demand").selectAll("*").remove()
+  d3.select("ul#demand").append("li")
+	.text(state)
+  d3.select("ul#demand").append("li")
+	.text("Total: " + filtered[0]['total'] + " MWh")
+  d3.select("ul#demand").append("li")
+	.text("Residential: " + filtered[0]['residential'] + " MWh")
+  d3.select("ul#demand").append("li")
+	.text("Commercial: " + filtered[0]['commercial'] + " MWh")
+  d3.select("ul#demand").append("li")
+	.text("Industrial: " + filtered[0]['industrial'] + " MWh")
+  return
+}
+
+// Create energy generation dashboard
+var powerplants = d3.json("data/powerplants.json").then(generation => {
+    if(state_selected == "United States"){
+    	var total_generation = [];
+    	generation.features.forEach(function(d) {
+		total_generation.push(d.properties.total_cap)
+    	});
+    	// https://stackoverflow.com/questions/1230233/how-to-find-the-sum-of-an-array-of-numbers
+    	sum_generation = total_generation.reduce(function(a,b) {return a+b;},0)
+    	sum_generation = sum_generation*365*24 // conversion to MWh
+	d3.select("ul#generation").selectAll("*").remove()
+  	d3.select("ul#generation").append("li")
+		.text("United States")
+  	d3.select("ul#generation").append("li")
+		// https://stackoverflow.com/questions/2901102/how-to-print-a-number-with-commas-as-thousands-separators-in-javascript
+		.text("Total Energy Produced: " + Math.round(sum_generation).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",") + " MWh")
+	d3.select("ul#generation").append("li")
+		.text("Total from Renewable Sources: To Be Included")
+	d3.select("ul#generation").append("li")
+		.text("Total from Non-Renewable Sources: To Be Included")
+	}
+	// Add code later for if state_selected is a specific state
+})
+
+// Create map function
 function createMap(us) { 
 	// Add map
 	states = states_g.selectAll("path")
@@ -75,8 +188,15 @@ function reset_zoom(transition_speed=ZOOM_TRANSITION_SPEED) {
 // https://observablehq.com/@d3/zoom-to-bounding-box?collection=@d3/d3-zoom
 function zoom_state(state, idx, ele) {
 	var current_state = d3.select(this);
+	
+	// Update state_selected, which will be used to update dashboards
+	state_selected = current_state['_groups'][0][0]['id'];
+	window.x.a = state_selected
+	
 	if (current_state.classed("selected")) {
 		reset_zoom();
+	        state_selected = "United States"
+		window.x.a = state_selected
 	} else {
 		const [[x1, y1], [x2, y2]] = geoGenerator.bounds(state);
 		d3.event.stopPropagation();	// Prevent SVG from zooming out
@@ -119,6 +239,14 @@ function load_data(data_to_load) {
 			.attr("fill", "blue")
 			.attr("stroke", "white")
 			.attr("d", geoGenerator);
+		
+		// Add tooltip if dataset is "powerplants":
+		if (filename == "data/powerplants.json") {
+			g.selectAll("path")
+			.on("mouseover", tip.show)
+	    		.on("mouseout", tip.hide)
+		}
+
 		
 		data_loaded.push(g);
 	}).catch(e => {

@@ -145,7 +145,7 @@ var demand = d3.dsv(",", "data/demand.csv", function(d) {
       }
       }
     state_listener.registerListener(function(val) {
-    demandDashboard(demand, val, selected_year);
+    	demandDashboard(demand, val, selected_year);
     });
 })
 
@@ -169,48 +169,71 @@ function demandDashboard(data, state, year){
 
 // Create energy generation dashboard
 var powerplants = d3.json("data/powerplants_cleaned.geojson").then(generation => {
-    if(state_selected == "United States"){
-	// Get total energy
-    	var total_generation = [];
-    	generation.features.forEach(function(d) {
-		total_generation.push(d.properties.total_cap)
-    	});
-    	// https://stackoverflow.com/questions/1230233/how-to-find-the-sum-of-an-array-of-numbers
-    	sum_generation = total_generation.reduce(function(a,b) {return a+b;},0)
-    	sum_generation = sum_generation*365*24 // conversion to MWh
-
-	// Get total renewable energy
-	filtered_renewables = generation.features.filter(function(d) {return d.properties.renewable == true; });
-	var total_renewable = [];
-	filtered_renewables.forEach(function(d) {
-		total_renewable.push(d.properties.total_cap)
-    	});
-    	sum_renewable = total_renewable.reduce(function(a,b) {return a+b;},0)
-    	sum_renewable = sum_renewable*365*24 // conversion to MWh
-
-	// Get total renewable energy
-	filtered_nonrenewables = generation.features.filter(function(d) {return d.properties.renewable == false; });
-	var total_nonrenewable = [];
-	filtered_nonrenewables.forEach(function(d) {
-		total_nonrenewable.push(d.properties.total_cap)
-    	});
-    	sum_nonrenewable = total_nonrenewable.reduce(function(a,b) {return a+b;},0)
-    	sum_nonrenewable = sum_nonrenewable*365*24 // conversion to MWh
-
-	// Add to the dashboard
-	d3.select("ul#generation").selectAll("*").remove()
-  	d3.select("ul#generation").append("li")
-		.text("United States")
-  	d3.select("ul#generation").append("li")
-		// https://stackoverflow.com/questions/2901102/how-to-print-a-number-with-commas-as-thousands-separators-in-javascript
-		.text("Total Energy Produced: " + Math.round(sum_generation).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",") + " MWh")
-	d3.select("ul#generation").append("li")
-		.text("Total from Renewable Sources: " + Math.round(sum_renewable).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",") + " MWh")
-	d3.select("ul#generation").append("li")
-		.text("Total from Non-Renewable Sources: " + Math.round(sum_nonrenewable).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",") + " MWh")
-	}
-	// Add code later for if state_selected is a specific state
+        generationDashboard(generation, state_selected)
+	window.state_listener2 = {
+      		aInternal: state_selected,
+      		aListener: function(val) {},
+      		set a(val) {
+            	  this.aInternal = val;
+        	  this.aListener(val);
+      		},
+      		get a() {
+        	  return this.aInternal;
+      		},
+      		registerListener: function(listener) {
+        	this.aListener = listener;
+      		}
+         }
+    	 state_listener2.registerListener(function(val) {
+    	 	generationDashboard(generation, val);
+	 });
 })
+
+// Create generation dashboard - function
+function generationDashboard(data, state){
+  filtered = data.features
+
+  // Get total energy
+  if(state_selected != "United States"){
+	filtered = data.features.filter(function(d) {return d.properties.state_long == state; });
+    	}
+
+  var total_generation = [];
+  filtered.forEach(function(d) {
+	total_generation.push(d.properties.total_cap)
+  });
+  sum_generation = total_generation.reduce(function(a,b) {return a+b;},0)
+  sum_generation = sum_generation*365*24 // conversion to MWh
+
+  // Get total renewable energy
+  filtered_renewables = filtered.filter(function(d) {return d.properties.renewable == true; });
+  var total_renewable = [];
+  filtered_renewables.forEach(function(d) {
+	total_renewable.push(d.properties.total_cap)
+  });
+  sum_renewable = total_renewable.reduce(function(a,b) {return a+b;},0)
+  sum_renewable = sum_renewable*365*24 // conversion to MWh
+
+  // Get total non-renewable energy
+  filtered_nonrenewables = filtered.filter(function(d) {return d.properties.renewable == false; });
+  var total_nonrenewable = [];
+  filtered_nonrenewables.forEach(function(d) {
+	total_nonrenewable.push(d.properties.total_cap)
+  });
+  sum_nonrenewable = total_nonrenewable.reduce(function(a,b) {return a+b;},0)
+  sum_nonrenewable = sum_nonrenewable*365*24 // conversion to MWh
+
+  // Add to the dashboard
+  d3.select("ul#generation").selectAll("*").remove()
+  d3.select("ul#generation").append("li")
+	.text(state)
+  d3.select("ul#generation").append("li")
+	.text("Total Energy Produced: " + Math.round(sum_generation).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",") + " MWh")
+  d3.select("ul#generation").append("li")
+	.text("Total from Renewable Sources: " + Math.round(sum_renewable).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",") + " MWh")
+  d3.select("ul#generation").append("li")
+	.text("Total from Non-Renewable Sources: " + Math.round(sum_nonrenewable).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",") + " MWh")
+}
 
 // Create map function
 function createMap(us) { 
@@ -244,11 +267,13 @@ function zoom_state(state, idx, ele) {
 	// Update state_selected, which will be used to update dashboards
 	state_selected = current_state['_groups'][0][0]['id'];
 	window.state_listener.a = state_selected
+	window.state_listener2.a = state_selected
 	
 	if (current_state.classed("selected")) {
 		reset_zoom();
 	        state_selected = "United States"
 		window.state_listener.a = state_selected
+		window.state_listener2.a = state_selected
 	} else {
 		const [[x1, y1], [x2, y2]] = geoGenerator.bounds(state);
 		d3.event.stopPropagation();	// Prevent SVG from zooming out

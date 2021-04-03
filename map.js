@@ -1,6 +1,4 @@
-// Define margin and dimensions for svg
-// const SVG_MARGIN = {TOP: 0, RIGHT: 0, BOTTOM: 0, LEFT: 0};
-// const SVG_PADDING = {TOP: 0, RIGHT: 0, BOTTOM: 0, LEFT: 0};
+
 const SVG_SIZE = {
 	WIDTH: screen.availWidth,
 	HEIGHT: screen.availHeight
@@ -164,6 +162,8 @@ function demandDashboard(data, state, year){
 	.text("Commercial: " + filtered[0]['commercial'] + " MWh")
   d3.select("ul#demand").append("li")
 	.text("Industrial: " + filtered[0]['industrial'] + " MWh")
+  d3.select("ul#demand").append("li")
+	.text("*Total may also include other types of use").style("font-size", "10px")
   return
 }
 

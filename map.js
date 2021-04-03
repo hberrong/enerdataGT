@@ -129,8 +129,7 @@ var demand = d3.dsv(",", "data/demand.csv", function(d) {
 		demandDashboard(demand, state_selected, selected_year);
 	    });
 
-    // all credits to https://stackoverflow.com/questions/1759987/listening-for-variable-changes-in-javascript
-     
+    // all credits to https://stackoverflow.com/questions/1759987/listening-for-variable-changes-in-javascript 
     window.state_listener = {
       aInternal: state_selected,
       aListener: function(val) {},
@@ -227,7 +226,6 @@ function createMap(us) {
 	map_loaded = true;
 	map_bounds = geoGenerator.bounds(us);
 	reset_zoom(0)
-	load_plants("powerplants")
 	
 }
 

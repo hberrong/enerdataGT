@@ -10,6 +10,7 @@
   <script type="text/javascript" src="lib/d3-dsv.min.js"></script>
   <script type="text/javascript" src="lib/d3-geo-projection.v2.min.js"></script>
   <script type="text/javascript" src="lib/topojson.v2.min.js"></script>
+  <script type="text/javascript" src="lib/d3-tip.min.js"></script>
   
   <link rel="stylesheet" href="map.css"/>
 </head>
@@ -26,7 +27,7 @@
     <div id="data-selectors" class="card">
       <p class="title">Load Data</p>
       <ul class="card-body">
-        <li><input type="checkbox" id="wind-selector" class="data-selector" value="wind"><label for="wind-selector">Wind</label></li>
+        <li><input type="checkbox" id="powerplants-selector" class="data-selector" value="powerplants"><label for="powerplants-selector">Power Plants</label></li>
         <li><input type="checkbox" id="solar-selector" class="data-selector" value="solar" disabled="disabled"><label for="solar-selector" disabled="disabled">Solar</label></li>
         <li><input type="checkbox" id="geothermal-selector" class="data-selector" value="geothermal"><label for="geothermal-selector">Geothermal</label></li>
       </ul>
@@ -35,6 +36,20 @@
     <div id="new-sources" class="card">
       <p class="title">Place New Source</p>
       <img id="wind-source" class="new-source" src="images/wind.svg" alt="Wind">
+    </div>
+
+    <select id="selectButton"></select>
+
+    <div id="demand" class="card">
+      <p class="title">Energy Demand</p>
+      <ul id="demand" class="card-body" style="list-style: none;">
+      </ul>
+    </div>
+    <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br> <br>
+    <div id="generation" class="card">
+      <p class="title">Current Energy Generation</p>
+      <ul id="generation" class="card-body" style="list-style: none;">
+      </ul>
     </div>
 
   <script type="text/javascript" src="map.js"></script>

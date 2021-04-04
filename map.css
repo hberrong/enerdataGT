@@ -6,6 +6,30 @@ body {
     overflow: hidden;
 }
 
+#title {
+    position: absolute;
+    left: 0;
+    right: 0;
+    width: 150px;
+    margin-left: auto;
+    margin-right: auto;
+    background-color: rgb(223, 223, 223);
+    text-align: center;
+
+    border-top: 1px solid black;
+    border-left: 1px solid black;
+    border-bottom: 3px groove rgb(136, 136, 136);;
+    border-right: 3px groove rgb(136, 136, 136);
+    -webkit-border-radius: 10px;
+    -moz-border-radius: 10px;
+    border-radius: 10px;
+}
+
+#title p {
+    margin-top: 5px;
+    margin-bottom: 5px;
+}
+
 #map-container {
     position: relative;
 }
@@ -153,3 +177,7 @@ path.selected {
   	  top: 100%;
   	  left: 0;
 	}
+
+#dragdrop-item {
+    position: absolute;
+}

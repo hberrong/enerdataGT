@@ -15,8 +15,10 @@ const DATA_TO_FILENAME = {
 
 // Variables
 var data_loaded = [];
+var new_sources = [];
 var map_loaded = false;
 var map_bounds;
+var usJson = {};
 
 // Define projection and path required for Choropleth
 var projection = d3.geoAlbersUsa();
@@ -35,8 +37,12 @@ var data_selectors = d3.selectAll(".data-selector").on("click", select_data);
 var new_source_icons = d3.selectAll(".new-source");
 var state_selected = "United States"
 var selected_year = "1990"
+var dragdrop_item = d3.select("body").append("div").attr("id", "dragdrop-item").style("top", "-100px").style("left", "-100px");
+var dragdrop_img = dragdrop_item.append("img");
 new_source_icons.call(d3.drag()
+	.on("start", drag_new_source_start)
 	.on("drag", drag_new_source)
+	.on("end", drag_new_source_end)
 );
 
 //Define wind color scale
@@ -237,6 +243,7 @@ function generationDashboard(data, state){
 
 // Create map function
 function createMap(us) { 
+	usJson = us;
 	// Add map
 	states = states_g.selectAll("path")
 		.data(us.features)
@@ -412,11 +419,70 @@ function remove_data(data_to_remove) {
 	// console.log(data_loaded);
 }
 
-function drag_new_source(datum, idx, ele) {
+function drag_new_source_start(datum, idx, ele) {
+	src = d3.select(this);
+	bnds = this.getBoundingClientRect();
+	dragdrop_img.attr("src", src.attr("src")).attr("width", bnds.width).attr("height", bnds.height);
+	dragdrop_item.datum(src.attr("alt").toLowerCase())
+	evtSrc = d3.event.sourceEvent;
+	dragdrop_item.style("left", `${evtSrc.clientX - bnds.width/2}px`).style("top", `${evtSrc.clientY - bnds.height/2}px`)
+}
 
-	// new_source.style("left", `${d3.event.x}px`);
-	// console.log(this);
-	// console.log(d3.event);
-	// ele.x = d3.event.x;
-	// console.log(d3.select(this));
+function drag_new_source(datum, idx, ele) {
+	evtSrc = d3.event.sourceEvent;
+	dragdrop_item.style("left", `${evtSrc.clientX - dragdrop_img.attr("width")/2}px`).style("top", `${evtSrc.clientY - dragdrop_img.attr("height")/2}px`)
+}
+
+function drag_new_source_end(datum, idx, ele) {
+	mouse_to_svg_coords = d3.mouse(map_g.node())
+	lat_lng = projection.invert(mouse_to_svg_coords)
+
+	dragdrop_item.style("left", "-100px").style("top", "-100px");
+	create_new_plant(lat_lng, dragdrop_item.datum());
+}
+
+function create_new_plant(lat_lng, plant_type) {
+	new_plant = {
+		lng: lat_lng[0],
+		lat: lat_lng[1],
+		plant_type: plant_type,
+		state: get_state_for_lat_lng(lat_lng),
+	}
+	//TODO: Create plant on SVG at location
+	new_sources.push(new_plant);
+
+	console.log(new_plant);
+	return new_plant;
+}
+
+function get_mouse_as_svg_coords() {
+	return d3.mouse(map_g.node());
+}
+
+function get_lat_lng_for_svg_coords(x_y_pos) {
+	return projection.invert(x_y_pos);
+}
+
+function get_svg_coords_for_lat_lng(lat_lng) {
+	return projection(lat_lng);
+}
+
+function get_state_for_mouse_pos() {
+	pos = get_mouse_as_svg_coords();
+	return get_state_for_position(pos);
+}
+
+function get_state_for_position(x_y_pos) {
+	lat_lng = get_lat_lng_for_svg_coords(x_y_pos);
+	return get_state_for_lat_lng(lat_lng);
+}
+
+function get_state_for_lat_lng(lat_lng) {
+	for (const state of usJson.features) {
+		if (d3.geoContains(state, lat_lng)) {
+			return state.properties.NAME;
+		}
+	}
+
+	return false;
 }

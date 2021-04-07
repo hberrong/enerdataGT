@@ -214,8 +214,7 @@ function display_powerplants() {
 	// Drop plants we're not displaying anymore
 	selection.exit().remove();
 
-	selection
-		.enter()
+	selection.enter()
 		.append("path")
 		.on("click", p => {
 			d3.event.stopPropagation();
@@ -225,7 +224,7 @@ function display_powerplants() {
 		})
 		.merge(selection)
 		.attr("d", p => images[p.plant_type])
-		.attr("transform", d => `translate(${projection([d.lng, d.lat])})`);
+		.attr("transform", d => `translate(${projection([d.lng, d.lat])}) scale(0.5)`);	// TODO: Update translate to center the image at lat long. Currently top-left is at position
 }
 
 function hide_powerplants() {
@@ -329,6 +328,8 @@ function zoom_state(state, idx, ele) {
 				.scale(Math.min(ZOOM_CONSTRAINTS[1], 0.6 / Math.max((x2 - x1) / SVG_SIZE.WIDTH, (y2 - y1) / SVG_SIZE.HEIGHT)))	// Zoom in on state
 				.translate((x1 + x2) / -2, (y1 + y2) / -2));	// Now move zoomed in state to center
 	}
+	
+	update_displayed_plants();
 }
 
 function zoom_map(datum, idx, ele) {

@@ -15,10 +15,23 @@ const DATA_TO_FILENAME = {
 
 // Variables
 var data_loaded = [];
-var new_sources = [];
+var plants = [];
+var next_plant_id = 0;
+var selected_plant_id = -1;
 var map_loaded = false;
 var map_bounds;
 var usJson = {};
+var plants_already_loaded = false;
+
+var images = {};
+
+// Fields
+var plant_lat_input = d3.select("#plant_lat");
+var plant_lng_input = d3.select("#plant_lng");
+var plant_type_select = d3.select("#plant_type");
+var plant_capacity_input = d3.select("#plant_capacity")
+d3.select("#update_plant").on("click", update_plant_details);
+d3.select("#reset_plant").on("click", reset_plant_details);
 
 // Define projection and path required for Choropleth
 var projection = d3.geoAlbersUsa();
@@ -33,6 +46,7 @@ const SVG_BOUNDS = svg.node().getBoundingClientRect();
 
 var map_g = svg.append("g").attr("id", "map");
 var states_g = map_g.append("g").attr("id", "states");
+var plant_g = map_g.append("g").attr("id", "plants");
 var data_selectors = d3.selectAll(".data-selector").on("click", select_data);
 var new_source_icons = d3.selectAll(".new-source");
 var state_selected = "United States"
@@ -44,6 +58,8 @@ new_source_icons.call(d3.drag()
 	.on("drag", drag_new_source)
 	.on("end", drag_new_source_end)
 );
+
+var powerplant_toggle = d3.select("#powerplants-selector").on("click", update_displayed_plants);
 
 //Define wind color scale
 var wind_color = d3.scaleQuantize()
@@ -71,25 +87,25 @@ var loader = d3.select(".loader")
 	.style("top", `${(SVG_SIZE.HEIGHT / 2) - 40}px`)
 	.style("left", `${(SVG_SIZE.WIDTH / 2) - 40}px`);
 
-	// function to get max of array for color scales
-	function getMax(arr, prop) {
-		var max;
-		for (var i=0 ; i<arr.length ; i++) {
-			if (max == null || arr[i]['properties'][prop] > max)
-					max = arr[i]['properties'][prop];
-			}
-		return max;
-	}
+// function to get max of array for color scales
+function getMax(arr, prop) {
+	var max;
+	for (var i=0 ; i<arr.length ; i++) {
+		if (max == null || arr[i]['properties'][prop] > max)
+				max = arr[i]['properties'][prop];
+		}
+	return max;
+}
 
-	// function to get min of array for color scales
-	function getMin(arr, prop) {
-		var min;
-		for (var i=0 ; i<arr.length ; i++) {
-			if (min == null || arr[i]['properties'][prop] < min)
-					min = arr[i]['properties'][prop];
-			}
-		return min;
-	}
+// function to get min of array for color scales
+function getMin(arr, prop) {
+	var min;
+	for (var i=0 ; i<arr.length ; i++) {
+		if (min == null || arr[i]['properties'][prop] < min)
+				min = arr[i]['properties'][prop];
+		}
+	return min;
+}
 
 
 // Load map
@@ -173,6 +189,100 @@ function demandDashboard(data, state, year){
   return
 }
 
+Promise.all([
+	d3.csv("data/powerplants_sanitized.csv", row => {
+		var plant_types = row["plant_types_all"].split(",");
+		var plant_caps = row["plant_caps_all"].split(",").map(x => parseFloat(x));
+		// console.log(plant_caps);
+		var new_plant = {
+			id: ++next_plant_id,
+			lng: +row["longitude"],
+			lat: +row["latitude"],
+			plant_type: row["plant_type"],
+			state: row["state_long"],
+			capacity: +row["total_cap"],
+			// state_short: d["state"],
+			is_renewable: row["renewable"] == "true",
+			name: row["plant_name"],
+			sub_plants: {}
+		}
+
+		plant_types.forEach((p, idx) => {
+			new_plant.sub_plants[p] = plant_caps[idx];
+		});
+
+		return new_plant;
+	}),
+	d3.xml("images/biomass.svg"),
+	d3.xml("images/coal.svg"),
+	d3.xml("images/geothermal.svg"),
+	d3.xml("images/hydro.svg"),
+	d3.xml("images/natural_gas.svg"),
+	d3.xml("images/nuclear.svg"),
+	d3.xml("images/other_fossil_gasses.svg"),
+	d3.xml("images/other.svg"),
+	d3.xml("images/petroleum.svg"),
+	d3.xml("images/pumped_storage.svg"),
+	d3.xml("images/solar.svg"),
+	d3.xml("images/wind.svg"),
+	d3.xml("images/wood.svg"),
+]).then(([powerplant_data, biomass_svg, coal_svg, geothermal_svg, hydro_svg, natural_gas_svg, nuclear_svg, other_fossil_gasses_svg, other_svg, petroleum_svg, pumped_storage_svg, solar_svg, wind_svg, wood_svg]) => {
+	plants = powerplant_data;
+	d3.select("#powerplants-selector").attr("disabled", null);
+
+	images = {
+		biomass: biomass_svg.getElementsByTagName("path")[0].getAttribute("d"),
+		coal: coal_svg.getElementsByTagName("path")[0].getAttribute("d"),
+		geothermal: geothermal_svg.getElementsByTagName("path")[0].getAttribute("d"),
+		hydro: hydro_svg.getElementsByTagName("path")[0].getAttribute("d"),
+		natural_gas: natural_gas_svg.getElementsByTagName("path")[0].getAttribute("d"),
+		nuclear: nuclear_svg.getElementsByTagName("path")[0].getAttribute("d"),
+		other_fossil_gasses: other_fossil_gasses_svg.getElementsByTagName("path")[0].getAttribute("d"),
+		other: other_svg.getElementsByTagName("path")[0].getAttribute("d"),
+		petroleum: petroleum_svg.getElementsByTagName("path")[0].getAttribute("d"),
+		pumped_storage: pumped_storage_svg.getElementsByTagName("path")[0].getAttribute("d"),
+		solar: solar_svg.getElementsByTagName("path")[0].getAttribute("d"),
+		wind: wind_svg.getElementsByTagName("path")[0].getAttribute("d"),
+		wood: wood_svg.getElementsByTagName("path")[0].getAttribute("d")
+	};
+	// display_powerplants();
+});
+
+function update_displayed_plants() {
+	if (powerplant_toggle.property("checked")) {
+		display_powerplants();
+	} else {
+		hide_powerplants();
+	}
+}
+
+function display_powerplants() {
+	var plants_to_display = plants.filter(p => (p.state == state_selected) || (state_selected == "United States"));
+	console.log(`Displaying ${plants_to_display.length} plants for state: ${state_selected}`)
+	// Get currently displayed plants
+	var selection = plant_g.selectAll("path").data(plants_to_display);
+	
+	// Drop plants we're not displaying anymore
+	selection.exit().remove();
+
+	selection
+		.enter()
+		.append("path")
+		.on("click", p => {
+			d3.event.stopPropagation();
+			selected_plant_id = p.id;
+			console.log(p);
+			set_plant_details_form();
+		})
+		.merge(selection)
+		.attr("d", p => images[p.plant_type])
+		.attr("transform", d => `translate(${projection([d.lng, d.lat])})`);
+}
+
+function hide_powerplants() {
+	plant_g.selectAll("path").remove();
+}
+
 // Create energy generation dashboard
 var powerplants = d3.json("data/powerplants_cleaned.geojson").then(generation => {
         generationDashboard(generation, state_selected)
@@ -244,6 +354,7 @@ function generationDashboard(data, state){
 // Create map function
 function createMap(us) { 
 	usJson = us;
+
 	// Add map
 	states = states_g.selectAll("path")
 		.data(us.features)
@@ -278,9 +389,9 @@ function zoom_state(state, idx, ele) {
 	
 	if (current_state.classed("selected")) {
 		reset_zoom();
-	        state_selected = "United States"
-		window.state_listener.a = state_selected
-		window.state_listener2.a = state_selected
+		state_selected = "United States";
+		window.state_listener.a = state_selected;
+		window.state_listener2.a = state_selected;
 	} else {
 		const [[x1, y1], [x2, y2]] = geoGenerator.bounds(state);
 		d3.event.stopPropagation();	// Prevent SVG from zooming out
@@ -344,6 +455,7 @@ function load_data(data_to_load) {
 			g.selectAll("path")
 			.on("mouseover", tip.show)
 	    		.on("mouseout", tip.hide)
+				.on('click', () => console.log("click 2"));
 		}
 
 		data_loaded.push(g);
@@ -369,45 +481,45 @@ function set_color_domain(d,data_to_load){
 	}
 }
 
-
 function load_plants(data_to_load) {
 	svg.classed("loading", true);
 	loader.classed("hidden", false);
 	filename = DATA_TO_FILENAME[data_to_load];
+
 	d3.json(filename).then(d => {
 		var g = map_g.append("g")
 			.attr("id", data_to_load + "-data");
 
-		g.selectAll("path")
-			.data(d.features)
-			.enter()
-			.append("image")
-			.attr('d',geoGenerator)
-			.attr('xlink:href',function(d) {return get_image(d.properties.capacity_b)})
-			.attr("transform", function(d)
-			{ return "translate(" + projection(d.geometry.coordinates) + ")"; })
-			.attr("width",10)
-			.attr("height",10)
-		
+	g.selectAll("path")
+		.data(d.features)
+		.enter()
+		.append("image")
+		.attr('d',geoGenerator)
+		.attr('xlink:href',function(d) {return get_image(d.properties.capacity_b)})
+		.attr("transform", function(d)
+		{ return "translate(" + projection(d.geometry.coordinates) + ")"; })
+		.attr("width",10)
+		.attr("height",10)
+		.on("click", () => console.log("Click"));
 
-			data_loaded.push(g);
-		}).catch(e => {
-			console.log(filename + " not found.\n" + e);
-		}).finally(() => {
-			svg.classed("loading", false);
-			loader.classed("hidden", true);
-		});
-	}
+		data_loaded.push(g);
+	}).catch(e => {
+		console.log(filename + " not found.\n" + e);
+	}).finally(() => {
+		svg.classed("loading", false);
+		loader.classed("hidden", true);
+	});
+}
 
-	function get_image(capacity_b) {
-		// get the plant type as the string before the "=" of
-		// the capacity_b property
-		if (capacity_b !== null) {
-			var plant = capacity_b.split("=")[0].trim().split(" ").join("_")
-			//console.log(plant)
-			return 'images/' + plant + '.png'
-		}
+function get_image(capacity_b) {
+	// get the plant type as the string before the "=" of
+	// the capacity_b property
+	if (capacity_b !== null) {
+		var plant = capacity_b.split("=")[0].trim().split(" ").join("_")
+		//console.log(plant)
+		return 'images/' + plant + '.png'
 	}
+}
 
 function remove_data(data_to_remove) {
 	var id = data_to_remove + "-data";
@@ -442,17 +554,64 @@ function drag_new_source_end(datum, idx, ele) {
 }
 
 function create_new_plant(lat_lng, plant_type) {
-	new_plant = {
-		lng: lat_lng[0],
-		lat: lat_lng[1],
-		plant_type: plant_type,
-		state: get_state_for_lat_lng(lat_lng),
-	}
-	//TODO: Create plant on SVG at location
-	new_sources.push(new_plant);
+	var state_selected = get_state_for_lat_lng(lat_lng);
+	var new_plant = undefined;
+	if (state_selected) {
+		new_plant = {
+			id: ++next_plant_id,
+			lng: lat_lng[0],
+			lat: lat_lng[1],
+			plant_type: plant_type,
+			state: get_state_for_lat_lng(lat_lng),
+			capacity: 0,
+			sub_plants: {},
+			is_renewable: true,				// TODO: Fix this so it's not always true
+			name: `New Plant (#${next_plant_id})`
+		}
 
-	console.log(new_plant);
+		selected_plant_id = next_plant_id;
+
+		plants.push(new_plant);
+		// console.log(new_plant);
+
+		update_displayed_plants();
+
+		// console.log(plants);
+
+		set_plant_details_form();
+	} else {
+		window.alert("Invalid location for new plant");
+	}
 	return new_plant;
+}
+
+function set_plant_details_form() {
+	var current_plant = plants.find(p => p.id == selected_plant_id);
+	// console.log(`Looking for id ${selected_plant_id}`);
+	// console.log(current_plant);
+
+	plant_lat_input.property("value", current_plant.lat);
+	plant_lng_input.property("value", current_plant.lng);
+	plant_type_select.property("value", current_plant.plant_type);
+	plant_capacity_input.property("value", current_plant.capacity);
+}
+
+function update_plant_details() {
+	d3.event.preventDefault();
+
+	current_plant = plants.find(p => p.id == selected_plant_id);
+	// var current_plant = plants[idx];
+	current_plant.lat = parseFloat(plant_lat_input.property("value"));
+	current_plant.lng = parseFloat(plant_lng_input.property("value"));
+	current_plant.plant_type = plant_type_select.property("value");
+	current_plant.capacity = parseFloat(plant_capacity_input.property("value"));
+	// console.log(plants);
+	update_displayed_plants();
+}
+
+function reset_plant_details() {
+	d3.event.preventDefault();
+	set_plant_details_form();
 }
 
 function get_mouse_as_svg_coords() {

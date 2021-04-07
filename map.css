@@ -97,17 +97,21 @@ path.selected {
     /* stroke-width: 2px; */
 }
 
+#plants path {
+    stroke: black;
+}
+
 /* Data Selectors Card */
 #data-selectors {
     top: 25px;
     right: 2%;
 }
 
-#data-selectors ul {
+.card-body {
     margin: 0;
 }
 
-#data-selectors li {
+ul.no-dots li {
     list-style: none;
 }
 
@@ -119,6 +123,37 @@ path.selected {
 
 .new-source {
     position: relative;
+}
+
+/* Plant Details Card */
+#plant-details {
+    /* top: 350px; */
+    right: 2%;
+    bottom: 2%;
+}
+
+#plant-details form {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 6px;
+}
+
+form label {
+    grid-column: 1/2;
+    text-align: right;
+}
+
+form input,
+form select {
+    grid-column: 2/4;
+}
+
+form button.left {
+    grid-column: 1/2;
+}
+
+form button.right {
+    grid-column: 3/4;
 }
 
 /* Loading Spinner */

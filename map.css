@@ -27,6 +27,31 @@ svg {
     z-index: -1;
 }
 
+#data-viz {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    width: 800px;
+    height: 350px;
+    z-index: 1;
+}
+
+.chart_title {
+    fill: black;
+    font: 20px Arial, Sans-serif ;
+    font-weight: bold;
+}
+
+.label {
+    fill: black;
+    font: 12px Arial, Sans-serif;
+}
+
+.axis_label {
+    fill: black;
+    font: 15px Arial, Sans-serif;
+}
+
 svg.loading {
     /* background-color: rgb(207, 207, 207); */
     opacity: 0.4;

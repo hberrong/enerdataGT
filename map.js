@@ -8,8 +8,9 @@ const ZOOM_CONSTRAINTS = [1.5, 100];
 const ZOOM_TRANSITION_SPEED = 750;
 
 const DATA_TO_FILENAME = {
- 	"wind": "data/wind_resource.geojson",
- 	"geothermal": "data/geothermal.json"
+	"solar":"data/solar_PV.json",
+ 	"wind": "data/wind_cleaned.json",
+ 	"geothermal": "data/geothermal_cleaned.json"
 }
 
 // Variables
@@ -59,8 +60,12 @@ new_source_icons.call(d3.drag()
 var powerplant_toggle = d3.select("#powerplants-selector").on("click", update_displayed_plants);
 
 //Define wind color scale
-var wind_color = d3.scaleQuantize()
-					.range(['#edf8e9','#c7e9c0','#a1d99b','#74c476','#31a354','#006d2c']);
+var greens = d3.interpolateGreens;
+var wind_color = d3.scaleSequential(greens);
+
+//Define solar color scale
+var oranges = d3.interpolateOranges;
+var solar_color = d3.scaleSequential(oranges);
 
 //Define geothermal color scale
 var geothermal_color = d3.scaleOrdinal()
@@ -72,7 +77,7 @@ var plant_tooltip = d3.tip()
   	    .attr('class', 'd3-tip')
   	    .offset([-10, 0])
   	    .html(p => {
-    	      return "<strong>Plant Name:</strong> <span style='color:white'>" + p.name + "</span><br>" + 
+    	      return "<strong>Plant Name:</strong> <span style='color:white'>" + p.name + "</span><br>" +
 	        "<strong>Capacity:</strong> <span style='color:white'>" + Math.round(p.capacity) + "<strong> MW</strong>" + "</span>";
   	    })
 svg.call(plant_tooltip);
@@ -113,7 +118,7 @@ function getMin(arr, prop) {
 function updateDemandDashboard() {
 	var year = d3.select("#selectButton").property("value");
 	var data = demand.find(d => d.year == year && d.state == state_selected);
-	
+
 	// https://www.codegrepper.com/code-examples/whatever/how+to+remove+dots+in+unordered+list+html
 	d3.select("#demand-title").text(`Energy Demand (${state_selected})`);
 	d3.select("#demand-total").text(`Total: ${data.total} MW`);
@@ -185,7 +190,7 @@ Promise.all([
     var unique_years = new Set();
 	demandData.forEach(d => unique_years.add(d.year));
     var years_list = [...unique_years];
-	
+
 	demand = demandData;
 
     // enter code to append the year options to the dropdown
@@ -200,7 +205,7 @@ Promise.all([
     // event listener for the dropdown. Update demand dashboard when selection changes.
     d3.select("#selectButton")
 	    .on("change", updateDemandDashboard);
-	
+
 	updateDemandDashboard();
 	updateGenerationDashboard();
 
@@ -235,7 +240,7 @@ function display_powerplants() {
 	console.log(`Displaying ${plants_to_display.length} plants for state: ${state_selected}`)
 	// Get currently displayed plants
 	var selection = plant_g.selectAll("path").data(plants_to_display);
-	
+
 	// Drop plants we're not displaying anymore
 	selection.exit().remove();
 
@@ -263,7 +268,7 @@ function updateGenerationDashboard() {
 	var total_gen = plants_to_display.reduce((a,b) => a + b.capacity, 0.0);
 	var total_renewable = plants_to_display.filter(p => p.is_renewable).reduce((a,b) => a + b.capacity, 0.0);
 	var total_nonrenewable = plants_to_display.filter(p => !p.is_renewable).reduce((a,b) => a + b.capacity, 0.0);
-	
+
 	d3.select("#generation_title").text(`Current Energy Generation Capacity (${state_selected})`);
 	d3.select("#generation_total").text(`Total Energy Capacity: ${Math.round(total_gen)} MW`);
 	d3.select("#generation_renwable").text(`Total from Renewable Sources: ${Math.round(total_renewable)} MW`);
@@ -271,7 +276,7 @@ function updateGenerationDashboard() {
 }
 
 // Create map function
-function createMap(us) { 
+function createMap(us) {
 	usJson = us;
 
 	// Add map
@@ -286,7 +291,7 @@ function createMap(us) {
 	map_loaded = true;
 	map_bounds = geoGenerator.bounds(us);
 	reset_zoom(0)
-	
+
 }
 
 function reset_zoom(transition_speed=ZOOM_TRANSITION_SPEED) {
@@ -303,7 +308,7 @@ function zoom_state(state, idx, ele) {
 
 	// Update state_selected, which will be used to update dashboards
 	state_selected = current_state.datum().properties.NAME;
-	
+
 	if (current_state.classed("selected")) {
 		reset_zoom();
 		state_selected = "United States";
@@ -319,7 +324,7 @@ function zoom_state(state, idx, ele) {
 				.scale(Math.min(ZOOM_CONSTRAINTS[1], 0.6 / Math.max((x2 - x1) / SVG_SIZE.WIDTH, (y2 - y1) / SVG_SIZE.HEIGHT)))	// Zoom in on state
 				.translate((x1 + x2) / -2, (y1 + y2) / -2));	// Now move zoomed in state to center
 	}
-	
+
 	update_displayed_plants();
 	updateDemandDashboard();
 	updateGenerationDashboard();
@@ -359,14 +364,14 @@ function load_data(data_to_load) {
 
 				if (value) {
 					//If value exists…
-					return wind_color(value);
+					return get_color_scale(value,data_to_load);
 				} else {
 					//If value is undefined…
 					return "#ccc";
 				}
 
 			})
-			//.attr("stroke", "white")
+			.style("stroke", "none")
 			.attr("d", geoGenerator);
 		data_loaded.push(g);
 	}).catch(e => {
@@ -377,19 +382,34 @@ function load_data(data_to_load) {
 	});
 }
 
+//function to define the different color scales for each drag_new_source_end
+function get_color_scale(value,data_to_load){
+	if (data_to_load == 'wind'){
+		return wind_color(value)
+	} else if (data_to_load == 'solar') {
+		return solar_color(value)
+	} else if (data_to_load == 'geothermal'){
+		return geothermal_color(value)
+	}
+}
+
+
 function set_color_domain(d,data_to_load){
-	console.log(d);
 	if (data_to_load == "wind"){
-		return wind_color.domain([
-			getMax(d.features,'capacity_mw'),
-			getMin(d.features,'capacity_mw')
-		]);
+		 wind_d = wind_color.domain([
+		  getMin(d.features,'capacity_mw'),
+			getMax(d.features,'capacity_mw')])
+		return wind_d
 	} else if (data_to_load == "geothermal"){
 		return geothermal_color.domain([
 			'>15','10-15','5-10','4-5','3-4','2-3','1-2','0.5-1','0.1-0.5','<0.1'
 		]);
-
 	}
+ else if (data_to_load == "solar"){
+	return solar_d = solar_color.domain([
+	 getMin(d.features,'capacity_mw'),
+	 getMax(d.features,'capacity_mw')])
+ return solar_d}
 }
 
 function remove_data(data_to_remove) {

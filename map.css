@@ -6,6 +6,30 @@ body {
     overflow: hidden;
 }
 
+#title {
+    position: absolute;
+    left: 0;
+    right: 0;
+    width: 150px;
+    margin-left: auto;
+    margin-right: auto;
+    background-color: rgb(223, 223, 223);
+    text-align: center;
+
+    border-top: 1px solid black;
+    border-left: 1px solid black;
+    border-bottom: 3px groove rgb(136, 136, 136);;
+    border-right: 3px groove rgb(136, 136, 136);
+    -webkit-border-radius: 10px;
+    -moz-border-radius: 10px;
+    border-radius: 10px;
+}
+
+#title p {
+    margin-top: 5px;
+    margin-bottom: 5px;
+}
+
 #map-container {
     position: relative;
 }
@@ -61,6 +85,12 @@ svg.loading {
     padding: 0 7px 7px 7px;
 }
 
+/* Demand Dashboard */
+.small-text {
+	font-size: 0.6em;
+	margin-top: 5px;
+}
+
 /* States */
 #map path {
     fill: rgb(190, 190, 190);
@@ -73,17 +103,22 @@ path.selected {
     /* stroke-width: 2px; */
 }
 
+#plants path {
+    stroke: black;
+	fill: white;
+}
+
 /* Data Selectors Card */
 #data-selectors {
     top: 25px;
     right: 2%;
 }
 
-#data-selectors ul {
+.card-body {
     margin: 0;
 }
 
-#data-selectors li {
+ul.no-dots li {
     list-style: none;
 }
 
@@ -93,8 +128,58 @@ path.selected {
     right: 2%;
 }
 
-.new-source {
-    position: relative;
+#new-sources > div {
+	display: -webkit-box;
+	display: -moz-box;
+	display: -ms-flexbox;
+	display: -moz-flex;
+	display: -webkit-flex;
+	display: flex;
+
+	-webkit-flex-wrap: wrap;
+	flex-wrap: wrap;
+
+	justify-content: space-around;
+	align-items: center;
+
+	padding: 0 5px 5px 5px;
+	gap: 7px;
+
+	width: 175px;
+}
+
+#new-sources img {
+}
+
+/* Plant Details Card */
+#plant-details {
+    /* top: 350px; */
+    right: 2%;
+    bottom: 2%;
+}
+
+#plant-details form {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 6px;
+}
+
+form label {
+    grid-column: 1/2;
+    text-align: right;
+}
+
+form input,
+form select {
+    grid-column: 2/4;
+}
+
+form button.left {
+    grid-column: 1/2;
+}
+
+form button.right {
+    grid-column: 3/4;
 }
 
 /* Loading Spinner */
@@ -154,41 +239,6 @@ path.selected {
   	  left: 0;
 	}
 
-  /* info_box */
-.info_box {
-    position: fixed;
-    margin: auto;
-    /* padding: 10px; */
-    /*width:100vw;*/
-    height:90px;
-    top: 0;
-  /*  background-color:  rgb(210, 255, 255);
-  /*border-bottom: 3px groove rgb(140,140,140);*/
-}
-
-.info_box .title {
-    font-weight: bold;
-    text-align: center;
-    font-size: 40px;
-    letter-spacing: 2px;
-    margin: auto;
-    vertical-align: middle;
-  /*  border-bottom: 1px solid black;*/
-    color: rgb(140, 140, 140);
-}
-
-.info_box .body {
-    text-align: center;
-    font-size: 20px;
-    vertical-align: middle;
-  /*  border-bottom: 1px solid black;*/
-    color: rgb(140, 140, 140);
-}
-
-.info_box .numbers {
-    text-align: center;
-    font-size: 30px;
-    vertical-align: middle;
-  /*  border-bottom: 1px solid black;*/
-    color: rgb(140, 140, 140);
+#dragdrop-item {
+    position: absolute;
 }

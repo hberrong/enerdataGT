@@ -23,14 +23,18 @@
 
     <!-- append visualization svg to this div-->
     <div class="loader hidden"></div>
-    <div id="choropleth" class="svg-container">
+    <div id="title">
+      <p class="title">Enerdata</p>
     </div>
+
+    <div id="choropleth" class="svg-container"></div>
     <div id="map_overlay"></div>
+
     <div id="data-selectors" class="card">
       <p class="title">Load Data</p>
-      <ul class="card-body">
-        <li><input type="checkbox" id="powerplants-selector" class="data-selector" value="powerplants"><label for="powerplants-selector">Power Plants</label></li>
-        <li><input type="checkbox" id="solar-selector" class="data-selector" value="solar"><label for="solar-selector" disabled="disabled">Solar</label></li>
+      <ul class="card-body no-dots">
+        <li><input type="checkbox" id="powerplants-selector" value="powerplants" disabled="disabled"><label for="powerplants-selector">Power Plants</label></li>
+        <li><input type="checkbox" id="solar-selector" class="data-selector" value="solar" disabled="disabled"><label for="solar-selector" disabled="disabled">Solar</label></li>
         <li><input type="checkbox" id="geothermal-selector" class="data-selector" value="geothermal"><label for="geothermal-selector">Geothermal</label></li>
         <li><input type="checkbox" id="wind-selector" class="data-selector" value="wind"><label for="wind-selector">Wind</label></li>
       </ul>
@@ -38,20 +42,76 @@
 
     <div id="new-sources" class="card">
       <p class="title">Place New Source</p>
-      <img id="wind-source" class="new-source" src="images/wind.svg" alt="Wind">
+	  <div>
+		  <img id="wind-source" class="new-source" src="images/wind.svg" alt="Wind" width="24px">
+		  <img id="solar-source" class="new-source" src="images/solar.svg" alt="Solar" width="24px">
+		  <img id="biomass-source" class="new-source" src="images/biomass.svg" alt="Biomass" width="24px">
+		  <img id="hydro-source" class="new-source" src="images/hydro.svg" alt="Hydro" width="24px">
+		  <img id="coal-source" class="new-source" src="images/coal.svg" alt="Coal" width="24px">
+		  <img id="geothermal-source" class="new-source" src="images/geothermal.svg" alt="Geothermal" width="24px">
+		  <img id="natural-gas-source" class="new-source" src="images/natural_gas.svg" alt="Natural Gass" width="24px">
+		  <img id="nuclear-source" class="new-source" src="images/nuclear.svg" alt="Nuclear" width="24px">
+		  <img id="other-fossil-gasses-source" class="new-source" src="images/other_fossil_gasses.svg" alt="Other Fossil Gasses" width="24px">
+		  <img id="other-source" class="new-source" src="images/other.svg" alt="Other" width="24px">
+		  <img id="petroleum-source" class="new-source" src="images/petroleum.svg" alt="Petroleum" width="24px">
+		  <img id="pumped-storage-source" class="new-source" src="images/pumped_storage.svg" alt="Pumped Storage" width="24px">
+		  <img id="wood-source" class="new-source" src="images/wood.svg" alt="Wood" width="24px">
+	  </div>
+    </div>
+
+    <div id="plant-details" class="card">
+      <p class="title">Plant Details</p>
+      <form class="card-body">
+        <label for="plant_lat">Latitude</label>
+        <input name="plant_lat" id="plant_lat" type="number" />
+
+        <label for="plant_lng">Longitutde</label>
+        <input name="plant_lng" id="plant_lng" type="number" />
+
+        <label for="plant_type">Type</label>
+        <select name="plant_type" id="plant_type">
+            <option value="wind">Wind</option>
+            <option value="solar">Solar</option>
+            <option value="geothermal">Geothermal</option>
+            <option value="hydro">Hydro</option>
+            <option value="biomass">Biomass</option>
+            <option value="coal">Coal</option>
+            <option value="natural_gas">Natural Gas</option>
+            <option value="nuclear">Nuclear</option>
+            <option value="other_fossil_gasses">Other Fossil Gasses</option>
+            <option value="other">Other</option>
+            <option value="petroleum">Petroleum</option>
+            <option value="pumped_storage">Pumped Storage</option>
+            <option value="wood">Wood</option>
+        </select>
+
+        <label for="plant_capacity">Capacity (mW)</label>
+        <input name="plant_capacity" id="plant_capacity" type="number" />
+
+        <button id="update_plant" class="left">Update</button>
+        <button id="reset_plant" class="right">Reset</button>
+      </form>
     </div>
 
     <select id="selectButton"></select>
 
-    <!--<div id="demand" class="card">
-      <p class="title">Energy Demand</p>
+    <div class="card">
+      <p id="demand-title" class="title">Energy Demand</p>
       <ul id="demand" class="card-body" style="list-style: none;">
+		<li id="demand-total">Total: 0 MW</li>
+		<li id="demand-residential">Residential: 0 MW</li>
+		<li id="demand-commercial">Commercial: 0 MW</li>
+		<li id="demand-industrial">Industrial: 0 MW</li>
+		<li class="small-text">*Total may also include other types of use</li>
       </ul>
-    </div> -->
+    </div>
 
-    <!--<div id="generation" class="card" style = "left:0px; bottom:50px">
-      <p class="title">Current Energy Generation Capacity</p>
+    <div id="generation" class="card" style = "left:0px; bottom:50px">
+      <p id="generation_title" class="title">Current Energy Generation Capacity</p>
       <ul id="generation" class="card-body" style="list-style: none;">
+		<li id="generation_total">0 MW</li>
+		<li id="generation_renwable">0 MW</li>
+		<li id="generation_nonrenewable">0 MW</li>
       </ul>
     </div> -->
 

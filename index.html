@@ -11,7 +11,9 @@
   <script type="text/javascript" src="lib/d3-geo-projection.v2.min.js"></script>
   <script type="text/javascript" src="lib/topojson.v2.min.js"></script>
   <script type="text/javascript" src="lib/d3-tip.min.js"></script>
-  
+  <script type="text/javascript" src="lib/colorbrewer.js"></script>
+  <script src="//d3js.org/d3-scale-chromatic.v0.3.min.js"></script>
+
   <link rel="stylesheet" href="map.css"/>
 </head>
 
@@ -28,8 +30,9 @@
       <p class="title">Load Data</p>
       <ul class="card-body">
         <li><input type="checkbox" id="powerplants-selector" class="data-selector" value="powerplants"><label for="powerplants-selector">Power Plants</label></li>
-        <li><input type="checkbox" id="solar-selector" class="data-selector" value="solar" disabled="disabled"><label for="solar-selector" disabled="disabled">Solar</label></li>
+        <li><input type="checkbox" id="solar-selector" class="data-selector" value="solar"><label for="solar-selector" disabled="disabled">Solar</label></li>
         <li><input type="checkbox" id="geothermal-selector" class="data-selector" value="geothermal"><label for="geothermal-selector">Geothermal</label></li>
+        <li><input type="checkbox" id="wind-selector" class="data-selector" value="wind"><label for="wind-selector">Wind</label></li>
       </ul>
     </div>
 
@@ -40,16 +43,33 @@
 
     <select id="selectButton"></select>
 
-    <div id="demand" class="card">
+    <!--<div id="demand" class="card">
       <p class="title">Energy Demand</p>
       <ul id="demand" class="card-body" style="list-style: none;">
       </ul>
-    </div>
-    
-    <div id="generation" class="card" style = "left:0px; bottom:50px">
+    </div> -->
+
+    <!--<div id="generation" class="card" style = "left:0px; bottom:50px">
       <p class="title">Current Energy Generation Capacity</p>
       <ul id="generation" class="card-body" style="list-style: none;">
       </ul>
+    </div> -->
+
+    <div id="heading" class="info_box" style = "width:350px; right:42%">
+      <p class="title">ENERDATA</p>
+      <p class="body">Exploring Renewable Energy Exploration</p>
+    </div>
+
+    <div id="stats" class="info_box" style = "width:100; height:100vw; left:0">
+      <p class="title" style = "font-size:30px; margin:20px 0 0 10px">USA</p>
+      <p id = "percent_re" class="numbers" style = "color:rgb(76, 161, 40)"></p>
+      <p class="body" style = "color:rgb(76, 161, 40); margin:0px 0 0 0">Percent Renewable</p>
+      <p id = "capacity" class="numbers" style = "color:rgb(212, 162, 242)"></p>
+      <p class="body" style = "color:rgb(212, 162, 242); margin:0px 0 0 0">Capacity</p>
+      <p id = "t_demand" class="numbers" style = "color:rgb(237, 177, 24)"></p>
+      <p class="body" style = "color:rgb(237, 177, 24); margin:0px 0 0 0">Demand</p>
+
+
     </div>
 
   <script type="text/javascript" src="map.js"></script>

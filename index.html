@@ -39,19 +39,21 @@
 
     <div id="new-sources" class="card">
       <p class="title">Place New Source</p>
-      <img id="wind-source" class="new-source" src="images/wind.svg" alt="Wind" width="24px">
-      <img id="solar-source" class="new-source" src="images/solar.svg" alt="Solar" width="24px">
-      <img id="biomass-source" class="new-source" src="images/biomass.svg" alt="Biomass" width="24px">
-      <img id="hydro-source" class="new-source" src="images/hydro.svg" alt="Hydro" width="24px">
-      <img id="coal-source" class="new-source" src="images/coal.svg" alt="Coal" width="24px">
-      <img id="geothermal-source" class="new-source" src="images/geothermal.svg" alt="Geothermal" width="24px">
-      <img id="natural-gas-source" class="new-source" src="images/natural_gas.svg" alt="Natural Gass" width="24px">
-      <img id="nuclear-source" class="new-source" src="images/nuclear.svg" alt="Nuclear" width="24px">
-      <img id="other-fossil-gasses-source" class="new-source" src="images/other_fossil_gasses.svg" alt="Other Fossil Gasses" width="24px">
-      <img id="other-source" class="new-source" src="images/other.svg" alt="Other" width="24px">
-      <img id="petroleum-source" class="new-source" src="images/petroleum.svg" alt="Petroleum" width="24px">
-      <img id="pumped-storage-source" class="new-source" src="images/pumped_storage.svg" alt="Pumped Storage" width="24px">
-      <img id="wood-source" class="new-source" src="images/wood.svg" alt="Wood" width="24px">
+	  <div>
+		  <img id="wind-source" class="new-source" src="images/wind.svg" alt="Wind" width="24px">
+		  <img id="solar-source" class="new-source" src="images/solar.svg" alt="Solar" width="24px">
+		  <img id="biomass-source" class="new-source" src="images/biomass.svg" alt="Biomass" width="24px">
+		  <img id="hydro-source" class="new-source" src="images/hydro.svg" alt="Hydro" width="24px">
+		  <img id="coal-source" class="new-source" src="images/coal.svg" alt="Coal" width="24px">
+		  <img id="geothermal-source" class="new-source" src="images/geothermal.svg" alt="Geothermal" width="24px">
+		  <img id="natural-gas-source" class="new-source" src="images/natural_gas.svg" alt="Natural Gass" width="24px">
+		  <img id="nuclear-source" class="new-source" src="images/nuclear.svg" alt="Nuclear" width="24px">
+		  <img id="other-fossil-gasses-source" class="new-source" src="images/other_fossil_gasses.svg" alt="Other Fossil Gasses" width="24px">
+		  <img id="other-source" class="new-source" src="images/other.svg" alt="Other" width="24px">
+		  <img id="petroleum-source" class="new-source" src="images/petroleum.svg" alt="Petroleum" width="24px">
+		  <img id="pumped-storage-source" class="new-source" src="images/pumped_storage.svg" alt="Pumped Storage" width="24px">
+		  <img id="wood-source" class="new-source" src="images/wood.svg" alt="Wood" width="24px">
+	  </div>
     </div>
     
     <div id="plant-details" class="card">
@@ -90,15 +92,23 @@
 
     <select id="selectButton"></select>
 
-    <div id="demand" class="card">
-      <p class="title">Energy Demand</p>
+    <div class="card">
+      <p id="demand-title" class="title">Energy Demand</p>
       <ul id="demand" class="card-body" style="list-style: none;">
+		<li id="demand-total">Total: 0 MW</li>
+		<li id="demand-residential">Residential: 0 MW</li>
+		<li id="demand-commercial">Commercial: 0 MW</li>
+		<li id="demand-industrial">Industrial: 0 MW</li>
+		<li class="small-text">*Total may also include other types of use</li>
       </ul>
     </div>
     
     <div id="generation" class="card" style = "left:0px; bottom:50px">
-      <p class="title">Current Energy Generation Capacity</p>
+      <p id="generation_title" class="title">Current Energy Generation Capacity</p>
       <ul id="generation" class="card-body" style="list-style: none;">
+		<li id="generation_total">0 MW</li>
+		<li id="generation_renwable">0 MW</li>
+		<li id="generation_nonrenewable">0 MW</li>
       </ul>
     </div>
 

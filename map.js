@@ -8,7 +8,6 @@ const ZOOM_CONSTRAINTS = [1.5, 100];
 const ZOOM_TRANSITION_SPEED = 750;
 
 const DATA_TO_FILENAME = {
-	"powerplants": "data/powerplants.json",
  	"wind": "data/wind_resource.geojson",
  	"geothermal": "data/geothermal.json"
 }
@@ -16,13 +15,11 @@ const DATA_TO_FILENAME = {
 // Variables
 var data_loaded = [];
 var plants = [];
+var demand = [];
 var next_plant_id = 0;
 var selected_plant_id = -1;
-var map_loaded = false;
 var map_bounds;
 var usJson = {};
-var plants_already_loaded = false;
-
 var images = {};
 
 // Fields
@@ -71,16 +68,20 @@ var geothermal_color = d3.scaleOrdinal()
 '#fb6a4a','#ef3b2c','#cb181d','#a50f15','#67000d']);
 
 // Define Tool Tip
-var tip = d3.tip()
+var plant_tooltip = d3.tip()
   	    .attr('class', 'd3-tip')
   	    .offset([-10, 0])
-  	    .html(function(d) {
-    	      return "<strong>Plant Name:</strong> <span style='color:white'>" + d.properties.plant_name + "</span><br>" + 
-	        "<strong>Owned by:</strong> <span style='color:white'>" + d.properties.utility_na + "</span><br>" +
-	        "<strong>Capacity:</strong> <span style='color:white'>" + Math.round(d.properties.total_cap*365*24).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",") + "<strong> MWh</strong>" + "</span>"
+  	    .html(p => {
+    	      return "<strong>Plant Name:</strong> <span style='color:white'>" + p.name + "</span><br>" + 
+	        "<strong>Capacity:</strong> <span style='color:white'>" + Math.round(p.capacity) + "<strong> MW</strong>" + "</span>";
   	    })
+svg.call(plant_tooltip);
 
-svg.call(tip);
+var new_source_tooltip = d3.tip()
+	.attr("class", "d3-tip")
+	.offset([-10, 0])
+	.html(p => console.log(p));
+
 
 // Position our loader
 var loader = d3.select(".loader")
@@ -108,87 +109,23 @@ function getMin(arr, prop) {
 }
 
 
-// Load map
-d3.json("united_states.json").then(d => createMap(d));
-
-// Create demand dashboard - data preparation
-var demand = d3.dsv(",", "data/demand.csv", function(d) {
-    return {
-	year: d.YEAR,
-	st: d.ST,
-	state: d.STATE,
-	residential: d.RESIDENTIAL,
-	commercial: d.COMMERCIAL,
-	industrial: d.INDUSTRIAL,
-	other: d.OTHER,
-	transportation: d.TRANSPORTATION,
-	total: d.TOTAL
-  }}) 
-  .then(function (demand){
-
-    // Get a list with all the years from the dataset
-     var unique_years = new Set();
-     demand.forEach(function(d) {
-	  unique_years.add(d.year)
-	  })  
-     var years_list = [...unique_years];
-
-    // enter code to append the year options to the dropdown
-    d3.select("#selectButton")
-	    .selectAll("options")
-	    .data(years_list)
-	    .enter()
-	    .append("option")
-	    .text(function(d) {return d; })
-	    .attr("value", function(d) {return d; });
-			  
-    // event listener for the dropdown. Update demand dashboard when selection changes.
-    d3.select("#selectButton")
-	    .on("change", function(d) {
-		selected_year = d3.select(this).property("value")
-		demandDashboard(demand, state_selected, selected_year);
-	    });
-
-    // all credits to https://stackoverflow.com/questions/1759987/listening-for-variable-changes-in-javascript 
-    window.state_listener = {
-      aInternal: state_selected,
-      aListener: function(val) {},
-      set a(val) {
-        this.aInternal = val;
-        this.aListener(val);
-      },
-      get a() {
-        return this.aInternal;
-      },
-      registerListener: function(listener) {
-        this.aListener = listener;
-      }
-      }
-    state_listener.registerListener(function(val) {
-    	demandDashboard(demand, val, selected_year);
-    });
-})
-
 // Create demand dashboard - function
-function demandDashboard(data, state, year){
-  filtered = data.filter(function(d) {return d.year == year & d.state == state; });
-  // https://www.codegrepper.com/code-examples/whatever/how+to+remove+dots+in+unordered+list+html
-  d3.select("ul#demand").selectAll("*").remove()
-  d3.select("ul#demand").append("li")
-	.text(state)
-  d3.select("ul#demand").append("li")
-	.text("Total: " + filtered[0]['total'] + " MWh")
-  d3.select("ul#demand").append("li")
-	.text("Residential: " + filtered[0]['residential'] + " MWh")
-  d3.select("ul#demand").append("li")
-	.text("Commercial: " + filtered[0]['commercial'] + " MWh")
-  d3.select("ul#demand").append("li")
-	.text("Industrial: " + filtered[0]['industrial'] + " MWh")
-  d3.select("ul#demand").append("li")
-	.text("*Total may also include other types of use").style("font-size", "10px")
-  return
+function updateDemandDashboard() {
+	var year = d3.select("#selectButton").property("value");
+	var data = demand.find(d => d.year == year && d.state == state_selected);
+	
+	// https://www.codegrepper.com/code-examples/whatever/how+to+remove+dots+in+unordered+list+html
+	d3.select("#demand-title").text(`Energy Demand (${state_selected})`);
+	d3.select("#demand-total").text(`Total: ${data.total} MW`);
+	d3.select("#demand-residential").text(`Residential: ${data.residential} MW`);
+	d3.select("#demand-commercial").text(`Commercial: ${data.commercial} MW`);
+	d3.select("#demand-industrial").text(`Industrial: ${data.industrial} MW`);
 }
 
+// Load map
+d3.json("united_states.json").then(mapData => createMap(mapData));
+
+// Load other data
 Promise.all([
 	d3.csv("data/powerplants_sanitized.csv", row => {
 		var plant_types = row["plant_types_all"].split(",");
@@ -213,6 +150,19 @@ Promise.all([
 
 		return new_plant;
 	}),
+	d3.csv("data/demand.csv", d => {
+		return {
+			year: d.YEAR,
+			st: d.ST,
+			state: d.STATE,
+			residential: d.RESIDENTIAL,
+			commercial: d.COMMERCIAL,
+			industrial: d.INDUSTRIAL,
+			other: d.OTHER,
+			transportation: d.TRANSPORTATION,
+			total: d.TOTAL
+		}
+	}),
 	d3.xml("images/biomass.svg"),
 	d3.xml("images/coal.svg"),
 	d3.xml("images/geothermal.svg"),
@@ -226,9 +176,33 @@ Promise.all([
 	d3.xml("images/solar.svg"),
 	d3.xml("images/wind.svg"),
 	d3.xml("images/wood.svg"),
-]).then(([powerplant_data, biomass_svg, coal_svg, geothermal_svg, hydro_svg, natural_gas_svg, nuclear_svg, other_fossil_gasses_svg, other_svg, petroleum_svg, pumped_storage_svg, solar_svg, wind_svg, wood_svg]) => {
+]).then(([powerplant_data, demandData, biomass_svg, coal_svg, geothermal_svg, hydro_svg, natural_gas_svg, nuclear_svg, other_fossil_gasses_svg, other_svg, petroleum_svg, pumped_storage_svg, solar_svg, wind_svg, wood_svg]) => {
 	plants = powerplant_data;
 	d3.select("#powerplants-selector").attr("disabled", null);
+
+	console.log(demandData);
+    // Get a list with all the years from the dataset
+    var unique_years = new Set();
+	demandData.forEach(d => unique_years.add(d.year));
+    var years_list = [...unique_years];
+	
+	demand = demandData;
+
+    // enter code to append the year options to the dropdown
+    d3.select("#selectButton")
+	    .selectAll("option")
+	    .data(years_list)
+	    .enter()
+	    .append("option")
+	    .text(d => d)
+	    .attr("value", d => d);
+
+    // event listener for the dropdown. Update demand dashboard when selection changes.
+    d3.select("#selectButton")
+	    .on("change", updateDemandDashboard);
+	
+	updateDemandDashboard();
+	updateGenerationDashboard();
 
 	images = {
 		biomass: biomass_svg.getElementsByTagName("path")[0].getAttribute("d"),
@@ -257,7 +231,7 @@ function update_displayed_plants() {
 }
 
 function display_powerplants() {
-	var plants_to_display = plants.filter(p => (p.state == state_selected) || (state_selected == "United States"));
+	var plants_to_display = get_plants_in_state(state_selected);
 	console.log(`Displaying ${plants_to_display.length} plants for state: ${state_selected}`)
 	// Get currently displayed plants
 	var selection = plant_g.selectAll("path").data(plants_to_display);
@@ -273,6 +247,8 @@ function display_powerplants() {
 			console.log(p);
 			set_plant_details_form();
 		})
+		.on("mouseover", plant_tooltip.show)
+		.on("mouseout", plant_tooltip.hide)
 		.merge(selection)
 		.attr("d", p => images[p.plant_type])
 		.attr("transform", d => `translate(${projection([d.lng, d.lat])}) scale(0.5)`);	// TODO: Update translate to center the image at lat long. Currently top-left is at position
@@ -282,72 +258,16 @@ function hide_powerplants() {
 	plant_g.selectAll("path").remove();
 }
 
-// Create energy generation dashboard
-var powerplants = d3.json("data/powerplants_cleaned.geojson").then(generation => {
-        generationDashboard(generation, state_selected)
-	window.state_listener2 = {
-      		aInternal: state_selected,
-      		aListener: function(val) {},
-      		set a(val) {
-            	  this.aInternal = val;
-        	  this.aListener(val);
-      		},
-      		get a() {
-        	  return this.aInternal;
-      		},
-      		registerListener: function(listener) {
-        	this.aListener = listener;
-      		}
-         }
-    	 state_listener2.registerListener(function(val) {
-    	 	generationDashboard(generation, val);
-	 });
-})
-
-// Create generation dashboard - function
-function generationDashboard(data, state){
-  filtered = data.features
-
-  // Get total energy
-  if(state_selected != "United States"){
-	filtered = data.features.filter(function(d) {return d.properties.state_long == state; });
-    	}
-
-  var total_generation = [];
-  filtered.forEach(function(d) {
-	total_generation.push(d.properties.total_cap)
-  });
-  sum_generation = total_generation.reduce(function(a,b) {return a+b;},0)
-  sum_generation = sum_generation*365*24 // conversion to MWh
-
-  // Get total renewable energy
-  filtered_renewables = filtered.filter(function(d) {return d.properties.renewable == true; });
-  var total_renewable = [];
-  filtered_renewables.forEach(function(d) {
-	total_renewable.push(d.properties.total_cap)
-  });
-  sum_renewable = total_renewable.reduce(function(a,b) {return a+b;},0)
-  sum_renewable = sum_renewable*365*24 // conversion to MWh
-
-  // Get total non-renewable energy
-  filtered_nonrenewables = filtered.filter(function(d) {return d.properties.renewable == false; });
-  var total_nonrenewable = [];
-  filtered_nonrenewables.forEach(function(d) {
-	total_nonrenewable.push(d.properties.total_cap)
-  });
-  sum_nonrenewable = total_nonrenewable.reduce(function(a,b) {return a+b;},0)
-  sum_nonrenewable = sum_nonrenewable*365*24 // conversion to MWh
-
-  // Add to the dashboard
-  d3.select("ul#generation").selectAll("*").remove()
-  d3.select("ul#generation").append("li")
-	.text(state)
-  d3.select("ul#generation").append("li")
-	.text("Total Energy Produced: " + Math.round(sum_generation).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",") + " MWh")
-  d3.select("ul#generation").append("li")
-	.text("Total from Renewable Sources: " + Math.round(sum_renewable).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",") + " MWh")
-  d3.select("ul#generation").append("li")
-	.text("Total from Non-Renewable Sources: " + Math.round(sum_nonrenewable).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",") + " MWh")
+function updateGenerationDashboard() {
+	var plants_to_display = get_plants_in_state(state_selected);
+	var total_gen = plants_to_display.reduce((a,b) => a + b.capacity, 0.0);
+	var total_renewable = plants_to_display.filter(p => p.is_renewable).reduce((a,b) => a + b.capacity, 0.0);
+	var total_nonrenewable = plants_to_display.filter(p => !p.is_renewable).reduce((a,b) => a + b.capacity, 0.0);
+	
+	d3.select("#generation_title").text(`Current Energy Generation Capacity (${state_selected})`);
+	d3.select("#generation_total").text(`Total Energy Capacity: ${Math.round(total_gen)} MW`);
+	d3.select("#generation_renwable").text(`Total from Renewable Sources: ${Math.round(total_renewable)} MW`);
+	d3.select("#generation_nonrenewable").text(`Total from Non-Renewable Sources: ${Math.round(total_nonrenewable)} MW`);
 }
 
 // Create map function
@@ -380,17 +300,13 @@ function reset_zoom(transition_speed=ZOOM_TRANSITION_SPEED) {
 // https://observablehq.com/@d3/zoom-to-bounding-box?collection=@d3/d3-zoom
 function zoom_state(state, idx, ele) {
 	var current_state = d3.select(this);
-	
+
 	// Update state_selected, which will be used to update dashboards
-	state_selected = current_state['_groups'][0][0]['id'];
-	window.state_listener.a = state_selected
-	window.state_listener2.a = state_selected
+	state_selected = current_state.datum().properties.NAME;
 	
 	if (current_state.classed("selected")) {
 		reset_zoom();
 		state_selected = "United States";
-		window.state_listener.a = state_selected;
-		window.state_listener2.a = state_selected;
 	} else {
 		const [[x1, y1], [x2, y2]] = geoGenerator.bounds(state);
 		d3.event.stopPropagation();	// Prevent SVG from zooming out
@@ -405,6 +321,8 @@ function zoom_state(state, idx, ele) {
 	}
 	
 	update_displayed_plants();
+	updateDemandDashboard();
+	updateGenerationDashboard();
 }
 
 function zoom_map(datum, idx, ele) {
@@ -450,15 +368,6 @@ function load_data(data_to_load) {
 			})
 			//.attr("stroke", "white")
 			.attr("d", geoGenerator);
-
-    		// Add tooltip if dataset is "powerplants":
-		if (filename == "data/powerplants.json") {
-			g.selectAll("path")
-			.on("mouseover", tip.show)
-	    		.on("mouseout", tip.hide)
-				.on('click', () => console.log("click 2"));
-		}
-
 		data_loaded.push(g);
 	}).catch(e => {
 		console.log(filename + " not found.\n" + e);
@@ -469,6 +378,7 @@ function load_data(data_to_load) {
 }
 
 function set_color_domain(d,data_to_load){
+	console.log(d);
 	if (data_to_load == "wind"){
 		return wind_color.domain([
 			getMax(d.features,'capacity_mw'),
@@ -479,46 +389,6 @@ function set_color_domain(d,data_to_load){
 			'>15','10-15','5-10','4-5','3-4','2-3','1-2','0.5-1','0.1-0.5','<0.1'
 		]);
 
-	}
-}
-
-function load_plants(data_to_load) {
-	svg.classed("loading", true);
-	loader.classed("hidden", false);
-	filename = DATA_TO_FILENAME[data_to_load];
-
-	d3.json(filename).then(d => {
-		var g = map_g.append("g")
-			.attr("id", data_to_load + "-data");
-
-	g.selectAll("path")
-		.data(d.features)
-		.enter()
-		.append("image")
-		.attr('d',geoGenerator)
-		.attr('xlink:href',function(d) {return get_image(d.properties.capacity_b)})
-		.attr("transform", function(d)
-		{ return "translate(" + projection(d.geometry.coordinates) + ")"; })
-		.attr("width",10)
-		.attr("height",10)
-		.on("click", () => console.log("Click"));
-
-		data_loaded.push(g);
-	}).catch(e => {
-		console.log(filename + " not found.\n" + e);
-	}).finally(() => {
-		svg.classed("loading", false);
-		loader.classed("hidden", true);
-	});
-}
-
-function get_image(capacity_b) {
-	// get the plant type as the string before the "=" of
-	// the capacity_b property
-	if (capacity_b !== null) {
-		var plant = capacity_b.split("=")[0].trim().split(" ").join("_")
-		//console.log(plant)
-		return 'images/' + plant + '.png'
 	}
 }
 
@@ -644,5 +514,9 @@ function get_state_for_lat_lng(lat_lng) {
 		}
 	}
 
-	return false;
+	return null;
+}
+
+function get_plants_in_state(state) {
+	return plants.filter(p => (p.state == state) || (state == "United States"))
 }

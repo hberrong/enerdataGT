@@ -35,7 +35,7 @@ body {
 }
 
 /* Map */
-svg {
+#svg_choropleth {
     /* border: black 1px solid; */
     background-color: rgb(210, 255, 255);
     width: 100vw;
@@ -54,15 +54,27 @@ svg {
 #data-viz {
     position: absolute;
     bottom: 0;
-    right: 0;
-    width: 800px;
-    height: 350px;
+    left: 10px;
+    width: 400px;
+    height: 250px;
     z-index: 1;
+}
+
+#selectButton {
+    position: absolute;
+    bottom: 260px;
+    left: 10px;
+    z-index: 2;
+}
+
+.line {
+    stroke:rgb(255, 0, 0);
+    stroke-width: 3px;
 }
 
 .chart_title {
     fill: black;
-    font: 20px Arial, Sans-serif ;
+    font: 18px Arial, Sans-serif ;
     font-weight: bold;
 }
 

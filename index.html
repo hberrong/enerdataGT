@@ -29,7 +29,7 @@
     <div id="map_overlay"></div>
 
     <div id="data-selectors" class="card">
-      <p class="title">Load Data</p>
+      <p class="title">Step 1: Load Data</p>
       <ul class="card-body no-dots">
         <li><input type="checkbox" id="powerplants-selector" value="powerplants" disabled="disabled"><label for="powerplants-selector">Power Plants</label></li>
         <li><input type="checkbox" id="solar-selector" class="data-selector" value="solar" disabled="disabled"><label for="solar-selector" disabled="disabled">Solar</label></li>
@@ -38,7 +38,7 @@
     </div>
 
     <div id="new-sources" class="card">
-      <p class="title">Place New Source</p>
+      <p class="title">Step 2: Place New Source</p>
       <img id="wind-source" class="new-source" src="images/wind.svg" alt="Wind" width="24px">
       <img id="solar-source" class="new-source" src="images/solar.svg" alt="Solar" width="24px">
       <img id="biomass-source" class="new-source" src="images/biomass.svg" alt="Biomass" width="24px">
@@ -55,7 +55,7 @@
     </div>
     
     <div id="plant-details" class="card">
-      <p class="title">Plant Details</p>
+      <p class="title">Step 3: Plant Details</p>
       <form class="card-body">
         <label for="plant_lat">Latitude</label>
         <input name="plant_lat" id="plant_lat" type="number" />
@@ -80,7 +80,7 @@
             <option value="wood">Wood</option>
         </select>
 
-        <label for="plant_capacity">Capacity (mW)</label>
+        <label for="plant_capacity">Capacity (MW)</label>
         <input name="plant_capacity" id="plant_capacity" type="number" />
 
         <button id="update_plant" class="left">Update</button>
@@ -90,19 +90,19 @@
 
     <select id="selectButton"></select>
 
-    <div id="demand" class="card">
+    <!-- <div id="demand" class="card">
       <p class="title">Energy Demand</p>
       <ul id="demand" class="card-body" style="list-style: none;">
       </ul>
-    </div>
+    </div> -->
     
-    <div id="generation" class="card" style = "left:0px; bottom:50px">
+    <!-- <div id="generation" class="card" style = "left:0px; top:200px">
       <p class="title">Current Energy Generation Capacity</p>
       <ul id="generation" class="card-body" style="list-style: none;">
       </ul>
-    </div>
+    </div> -->
 
-    
+
     <div id="data-viz" class="card" style="text-align:center;"></div>
 
   <script type="text/javascript" src="map.js"></script>

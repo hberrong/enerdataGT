@@ -54,6 +54,7 @@ body {
 #data-viz {
     position: absolute;
     bottom: 0;
+<<<<<<< HEAD
     left: 10px;
     width: 400px;
     height: 250px;
@@ -75,6 +76,17 @@ body {
 .chart_title {
     fill: black;
     font: 18px Arial, Sans-serif ;
+=======
+    right: 0;
+    width: 800px;
+    height: 350px;
+    z-index: 1;
+}
+
+.chart_title {
+    fill: black;
+    font: 20px Arial, Sans-serif ;
+>>>>>>> 9f5fb7688cdde2ce24e054ff3630957439261055
     font-weight: bold;
 }
 

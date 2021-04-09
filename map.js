@@ -579,12 +579,7 @@ Promise.all([
 		year: d.YEAR,
 		st: d.ST,
 		state: d.STATE,
-		residential: d.RESIDENTIAL,
-		commercial: d.COMMERCIAL,
-		industrial: d.INDUSTRIAL,
-		other: d.OTHER,
-		transportation: d.TRANSPORTATION,
-		total: d.TOTAL
+		total: parseInt(d.TOTAL.replace(/,/g,""))
 	  }}),
 	d3.json("data/powerplants_cleaned.geojson")
 ]).then(function(data) {
@@ -592,35 +587,7 @@ Promise.all([
 	demand = data[0];
 	generation = data[1];
 
-	// Get a list with all the years from the dataset
-	var unique_years = new Set();
-	demand.forEach(function(d) {
-	 unique_years.add(d.year)
-	 })  
-	var years_list = [...unique_years];
-
-	// initialize graph
-	//demandDashboard(demand, "United States", "1990");
-	//generationDashboard(generation, "United States");
-	createPlots(demand, generation, plants, "United States", "1990");
-
-   // enter code to append the year options to the dropdown
-   d3.select("#selectButton")
-	   .selectAll("options")
-	   .data(years_list)
-	   .enter()
-	   .append("option")
-	   .text(function(d) {return d; })
-	   .attr("value", function(d) {return d; });
-			 
-   // event listener for the dropdown. Update dashboards and plots when selection changes.
-	d3.select("#selectButton")
-		.on("change", function(d) {
-			selected_year = d3.select(this).property("value")
-			//demandDashboard(demand, state_selected, selected_year);
-			//generationDashboard(generation, state_selected);
-			createPlots(demand, generation, plants, state_selected, selected_year);
-	   });
+	createPlots(demand, generation, plants, "United States");
 
    // all credits to https://stackoverflow.com/questions/1759987/listening-for-variable-changes-in-javascript 
 	 window.state_listener = {
@@ -640,7 +607,7 @@ Promise.all([
 	 state_listener.registerListener(function(val) {
 	   //demandDashboard(demand, val, selected_year);
 	   //generationDashboard(generation, val);
-	   createPlots(demand, generation, plants, val, selected_year);
+	   createPlots(demand, generation, plants, val);//, "2020");
    });
 }).catch(function(error) {
 	console.log(error)
@@ -651,7 +618,11 @@ var bar_margin = {top: 50, right: 20, bottom: 100, left: 50},
 w_bar = 300,
 h_bar = 100;
 
-// Append svg for bar chart sub plot
+var line_margin = {top: 50, right: 10, bottom: 50, left: 60},
+w_line = 300,
+h_line = 150;
+
+// Append svg for capacity bar chart
 var svg_plot = d3.select("div#data-viz").append("svg")
 	.attr("id", "barchart")
 	.attr("width", w_bar + bar_margin.right + bar_margin.left)
@@ -659,14 +630,137 @@ var svg_plot = d3.select("div#data-viz").append("svg")
 	.append("g")
 	.attr("transform", "translate(" + bar_margin.left + "," + bar_margin.top + ")");
 
-function createPlots(demand, generation, plants, state, year) {
-	noBarChart();
-	svg_plot.style("display", "block");
+// Append svg for demand forecast line graph
+var svg_line = d3.select("div#demand-viz").append("svg")
+	.attr("id", "line graph")
+	.attr("width", w_bar + bar_margin.right + bar_margin.left)
+	.attr("height", h_bar + bar_margin.bottom + bar_margin.top)
+	.append("g")
+	.attr("transform", "translate(" + bar_margin.left + "," + bar_margin.top + ")");
 
+function createPlots(demand, generation, plants, state) {
+	svg_line.selectAll("*").remove();
+
+	const filtered_forecast_data = demand.filter(function(d) {return d.state == state; }),
+	time_conv = d3.timeParse("%Y"),
+	forecast_data = [],
+	circle_data = [],
+	circle_years = ["1990", "2000", "2010", "2020", "2030", "2040", "2049"]
+
+	// convert forecast data for line graph
+	for (let i = 0; i < filtered_forecast_data.length; i++) {
+		const forecast = {
+			year: time_conv(filtered_forecast_data[i].year),
+			total: filtered_forecast_data[i].total/365/24/1000 // MWh to GW conversion
+		}
+		forecast_data.push(forecast);
+	}
+	
+	// create array of data for circle points
+	for (let j = 0; j < circle_years.length; j++) {
+		const circle = filtered_forecast_data.find(f => f.year == circle_years[j]);
+		const circle2 = {
+			year: time_conv(circle.year),
+			total: circle.total/365/24/1000 // MWh to GW conversion
+		}
+		circle_data.push(circle2);
+	}
+	
+	//----------------------------FORECAST LINE GRAPH----------------------------//
+	// define forecast demand scales
+	var min_date = d3.min(forecast_data, function(d) {
+		return d.year
+		})
+	var max_date = d3.max(forecast_data, function(d) {
+			return d.year
+			})
+	var max_tot = d3.max(forecast_data, function(d) {
+		return d.total
+		})
+
+	var x_dem_scale = d3.scaleTime()
+		.domain([min_date, max_date])
+		.range([0, w_line]);
+
+	var y_dem_scale = d3.scaleLinear()
+		.domain([0, max_tot])
+		.range([h_line, 0]);
+
+	// add axes
+	svg_line.append("g")
+		.attr("class", "x axis")
+		.attr("transform", "translate(0, " + (h_line) + ")")
+		.call(d3.axisBottom()
+			.ticks(5)
+			.tickFormat(d3.timeFormat('%Y'))
+			.scale(x_dem_scale));
+
+	svg_line.append("g")
+		.attr("class", "y axis")
+		.call(d3.axisLeft(y_dem_scale))
+
+	// create a path object for the forecast line
+	svg_line.append("path")
+		.datum(forecast_data)
+		.attr("fill", "none")
+		.attr("stroke", "grey")
+		.attr("stroke-width", 1.5)
+		.attr("d", d3.line()
+			.x(function(d) { return x_dem_scale(d.year); })
+			.y(function(d) { return y_dem_scale(d.total); })
+			.curve(d3.curveMonotoneX)
+			);
+	
+	// Create default capacity plot for 2020
+	createCapacityPlot(demand, generation, plants, state, "2020");
+
+	// add circles for selected years and event handler for choosing demand year
+	svg_line.selectAll(".circles")
+		.data(circle_data)
+		.enter()
+		.append("circle")
+		.attr("r", 3)
+		.attr("fill", "red")
+		.attr("cx", function(d) { return x_dem_scale(d.year); })
+		.attr("cy", function(d) { return y_dem_scale(d.total); })
+		.on("mouseover", f => createCapacityPlot(demand, generation, plants, state, f.year.getFullYear().toString()));
+
+	// add axes labels and titles
+	svg_line.append("text")
+		.attr("class", "axis_label")
+		.attr("id","x_axis_label")
+		.attr("text-anchor", "middle")
+		.attr("x", (w_line - line_margin.left - line_margin.right)/2 +line_margin.left/2)
+		.attr("y", h_line + line_margin.top/1.5)
+		.text("Year");
+
+	svg_line.append("text")
+		.attr("class", "axis_label")
+		.attr("id","y_axis_label")
+		.attr("text-anchor", "middle")
+		.attr("transform", "rotate(-90)")
+		.attr("x", -h_line/2)
+		.attr("y", -line_margin.left/1.6)
+		.text("Energy Demand (GW)");
+
+	svg_line.append("text")    
+		.attr("class", "chart_title")
+		.attr("id","chart_title")
+		.attr("x", (w_line - line_margin.left - line_margin.right)/2 + line_margin.left/2.5)
+		.attr("y", 0 - line_margin.top/2)
+		.style("text-anchor", "middle")
+		.text("Energy Demand for " + state)
+		.style("font-size", "15px");
+}
+
+function createCapacityPlot(demand, generation, plants, state, year) {
+	svg_plot.selectAll("*").remove();
+
+	//----------------------------FILTER DATA AND CALCULATIONS----------------------------//
 	// filter DEMAND for the year and state // 
 	filtered_dem = demand.filter(function(d) {return d.year == year & d.state == state; });
 	const filtered_dem_data = filtered_dem[0];
-
+	
 	// Get TOTAL energy for current and new capacity
 	if(state_selected != "United States"){
 		filtered_gen = generation.features.filter(function(d) {return d.properties.state_long == state; });
@@ -732,7 +826,7 @@ function createPlots(demand, generation, plants, state, year) {
 	const demand_data = {
 		label: "Energy Demand in " + filtered_dem_data.year,
 		year: filtered_dem_data.year,
-		total: (parseInt(filtered_dem_data.total.replace(/,/g,""))/365/24/1000)
+		total: filtered_dem_data.total/365/24/1000 // MWh to GW conversion
 	},
 	graph_data = [{
 		label: "Current",
@@ -750,7 +844,8 @@ function createPlots(demand, generation, plants, state, year) {
 		year: filtered_dem_data.year
 	},
 	keys = d3.keys(graph_data[0]).slice(2);
-	
+
+	//----------------------------CAPACITY BAR GRAPH----------------------------//
 	var stacked = d3.stack().keys(keys)(graph_data)
 		.map(d => (d.forEach(v => v.key = d.key), d));
 
@@ -862,13 +957,4 @@ function createPlots(demand, generation, plants, state, year) {
 		.style("text-anchor", "middle")
 		.text("New and Current Energy Capacity for " + label_info.state)
 		.style("font-size", "15px");
-};
-
-// Function to remove bar chart
-function noBarChart() {
-	// remove svg elements and hide
-	svg_plot.selectAll("*").remove()
-		.style("display", "none");;
-
-	svg_plot.selectAll("x_axis_label").remove();
 }

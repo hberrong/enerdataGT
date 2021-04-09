@@ -53,19 +53,28 @@ body {
 
 #data-viz {
     position: absolute;
-    bottom: 0;
-    left: 10px;
+    bottom: 2%;
+    right: 2%;
     width: 400px;
     height: 250px;
     z-index: 1;
 }
 
-#selectButton {
+#demand-viz {
+    position: absolute;
+    top: 2%;
+    right: 2%;
+    width: 400px;
+    height: 250px;
+    z-index: 1;
+}
+
+/* #selectButton {
     position: absolute;
     bottom: 260px;
     left: 10px;
     z-index: 2;
-}
+} */
 
 .line {
     stroke:rgb(255, 0, 0);
@@ -85,7 +94,7 @@ body {
 
 .axis_label {
     fill: black;
-    font: 15px Arial, Sans-serif;
+    font: 14px Arial, Sans-serif;
 }
 
 svg.loading {
@@ -110,6 +119,7 @@ svg.loading {
 }
 
 .card .title {
+    font: 15px Arial, Sans-serif;
     font-weight: bold;
     text-align: center;
     margin: 0 0 10px 0;
@@ -120,6 +130,7 @@ svg.loading {
 
 .card .card-body {
     padding: 0 7px 7px 7px;
+    font: 14px Arial, Sans-serif;
 }
 
 /* States */
@@ -141,7 +152,7 @@ path.selected {
 /* Data Selectors Card */
 #data-selectors {
     top: 25px;
-    right: 2%;
+    left: 2%;
 }
 
 .card-body {
@@ -154,8 +165,8 @@ ul.no-dots li {
 
 /* New Sources Card */
 #new-sources {
-    top: 200px;
-    right: 2%;
+    bottom: 220px;
+    left: 2%;
 }
 
 .new-source {
@@ -165,7 +176,7 @@ ul.no-dots li {
 /* Plant Details Card */
 #plant-details {
     /* top: 350px; */
-    right: 2%;
+    left: 2%;
     bottom: 2%;
 }
 

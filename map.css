@@ -69,13 +69,6 @@ body {
     z-index: 1;
 }
 
-/* #selectButton {
-    position: absolute;
-    bottom: 260px;
-    left: 10px;
-    z-index: 2;
-} */
-
 .line {
     stroke:rgb(255, 0, 0);
     stroke-width: 3px;
@@ -133,6 +126,18 @@ svg.loading {
     font: 14px Arial, Sans-serif;
 }
 
+/* Demand Dashboard */
+.small-text {
+	font-size: 0.6em;
+	margin-top: 5px;
+}
+
+/* Demand Dashboard */
+.small-text {
+	font-size: 0.6em;
+	margin-top: 5px;
+}
+
 /* States */
 #map path {
     fill: rgb(75, 75, 75);
@@ -147,6 +152,7 @@ path.selected {
 
 #plants path {
     stroke: black;
+	fill: white;
 }
 
 /* Data Selectors Card */
@@ -169,8 +175,27 @@ ul.no-dots li {
     left: 2%;
 }
 
-.new-source {
-    position: relative;
+#new-sources > div {
+	display: -webkit-box;
+	display: -moz-box;
+	display: -ms-flexbox;
+	display: -moz-flex;
+	display: -webkit-flex;
+	display: flex;
+
+	-webkit-flex-wrap: wrap;
+	flex-wrap: wrap;
+	
+	justify-content: space-around;
+	align-items: center;
+	
+	padding: 0 5px 5px 5px;
+	gap: 7px;
+	
+	width: 175px;
+}
+
+#new-sources img {
 }
 
 /* Plant Details Card */

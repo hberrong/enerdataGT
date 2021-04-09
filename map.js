@@ -529,10 +529,10 @@ function update_plant_details() {
 	current_plant.lat = parseFloat(plant_lat_input.property("value"));
 	current_plant.lng = parseFloat(plant_lng_input.property("value"));
 	current_plant.plant_type = plant_type_select.property("value");
-	current_plant.capacity = parseFloat(plant_capacity_input.property("value"));
+	current_plant.capacity = parseFloat(plant_capacity_input.property("value")*1000);
 	// console.log(plants);
 	update_displayed_plants();
-	createPlots(demand, generation, plants, state_selected, selected_year); // update plot
+	createPlots(demand, generation, plants, state_selected); // update plot
 }
 
 function reset_plant_details() {
@@ -607,7 +607,7 @@ Promise.all([
 	 state_listener.registerListener(function(val) {
 	   //demandDashboard(demand, val, selected_year);
 	   //generationDashboard(generation, val);
-	   createPlots(demand, generation, plants, val);//, "2020");
+	   createPlots(demand, generation, plants, val);
    });
 }).catch(function(error) {
 	console.log(error)
@@ -618,7 +618,7 @@ var bar_margin = {top: 50, right: 20, bottom: 100, left: 50},
 w_bar = 300,
 h_bar = 100;
 
-var line_margin = {top: 50, right: 10, bottom: 50, left: 60},
+var line_margin = {top: 35, right: 20, bottom: 115, left: 50},
 w_line = 300,
 h_line = 150;
 
@@ -633,10 +633,10 @@ var svg_plot = d3.select("div#data-viz").append("svg")
 // Append svg for demand forecast line graph
 var svg_line = d3.select("div#demand-viz").append("svg")
 	.attr("id", "line graph")
-	.attr("width", w_bar + bar_margin.right + bar_margin.left)
-	.attr("height", h_bar + bar_margin.bottom + bar_margin.top)
+	.attr("width", w_bar + line_margin.right + line_margin.left)
+	.attr("height", h_bar + line_margin.bottom + line_margin.top)
 	.append("g")
-	.attr("transform", "translate(" + bar_margin.left + "," + bar_margin.top + ")");
+	.attr("transform", "translate(" + line_margin.left + "," + line_margin.top + ")");
 
 function createPlots(demand, generation, plants, state) {
 	svg_line.selectAll("*").remove();
@@ -719,11 +719,18 @@ function createPlots(demand, generation, plants, state) {
 		.data(circle_data)
 		.enter()
 		.append("circle")
-		.attr("r", 3)
+		.attr("r", 4)
 		.attr("fill", "red")
 		.attr("cx", function(d) { return x_dem_scale(d.year); })
 		.attr("cy", function(d) { return y_dem_scale(d.total); })
-		.on("mouseover", f => createCapacityPlot(demand, generation, plants, state, f.year.getFullYear().toString()));
+		.on("mouseover", function(f) {
+			createCapacityPlot(demand, generation, plants, state, f.year.getFullYear().toString());
+	        d3.select(this).attr("r", 8);
+		})
+		.on("mouseout", function(f) {
+			createCapacityPlot(demand, generation, plants, state, "2020");
+	        d3.select(this).attr("r", 4);
+		});
 
 	// add axes labels and titles
 	svg_line.append("text")
@@ -731,7 +738,7 @@ function createPlots(demand, generation, plants, state) {
 		.attr("id","x_axis_label")
 		.attr("text-anchor", "middle")
 		.attr("x", (w_line - line_margin.left - line_margin.right)/2 +line_margin.left/2)
-		.attr("y", h_line + line_margin.top/1.5)
+		.attr("y", h_line + line_margin.bottom/3)
 		.text("Year");
 
 	svg_line.append("text")
@@ -740,17 +747,26 @@ function createPlots(demand, generation, plants, state) {
 		.attr("text-anchor", "middle")
 		.attr("transform", "rotate(-90)")
 		.attr("x", -h_line/2)
-		.attr("y", -line_margin.left/1.6)
+		.attr("y", -line_margin.left/1.25)
 		.text("Energy Demand (GW)");
 
 	svg_line.append("text")    
 		.attr("class", "chart_title")
 		.attr("id","chart_title")
 		.attr("x", (w_line - line_margin.left - line_margin.right)/2 + line_margin.left/2.5)
-		.attr("y", 0 - line_margin.top/2)
+		.attr("y", -line_margin.top/2.3)
 		.style("text-anchor", "middle")
 		.text("Energy Demand for " + state)
 		.style("font-size", "15px");
+
+	svg_line.append("text")    
+		.attr("class", "label")
+		.attr("id","Forecast instructions")
+		.attr("x", (w_line - line_margin.left - line_margin.right)/2 + line_margin.left/2.5)
+		.attr("y", h_line + line_margin.bottom/2)
+		.style("text-anchor", "middle")
+		.style("font-size", "10 px")
+		.text("Mouseover circle to compare energy demand to capacity");
 }
 
 function createCapacityPlot(demand, generation, plants, state, year) {
@@ -955,6 +971,6 @@ function createCapacityPlot(demand, generation, plants, state, year) {
 		.attr("x", (w_bar - bar_margin.left - bar_margin.right)/2 + bar_margin.left/2.5)
 		.attr("y", 0 - bar_margin.top/2)
 		.style("text-anchor", "middle")
-		.text("New and Current Energy Capacity for " + label_info.state)
-		.style("font-size", "15px");
+		.style("font-size", "15px")
+		.text("New and Current Energy Capacity for " + label_info.state);
 }

@@ -409,7 +409,8 @@ function set_color_domain(d,data_to_load){
 	return solar_d = solar_color.domain([
 	 getMin(d.features,'capacity_mw'),
 	 getMax(d.features,'capacity_mw')])
- return solar_d}
+ return solar_d
+}
 }
 
 function remove_data(data_to_remove) {

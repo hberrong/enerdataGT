@@ -35,7 +35,7 @@ body {
 }
 
 /* Map */
-svg {
+#svg_choropleth {
     /* border: black 1px solid; */
     background-color: rgb(210, 255, 255);
     width: 100vw;
@@ -49,6 +49,45 @@ svg {
     width: 100vw;
     height: 100vh;
     z-index: -1;
+}
+
+#data-viz {
+    position: absolute;
+    bottom: 2%;
+    right: 2%;
+    width: 400px;
+    height: 250px;
+    z-index: 1;
+}
+
+#demand-viz {
+    position: absolute;
+    top: 2%;
+    right: 2%;
+    width: 400px;
+    height: 250px;
+    z-index: 1;
+}
+
+.line {
+    stroke:rgb(255, 0, 0);
+    stroke-width: 3px;
+}
+
+.chart_title {
+    fill: black;
+    font: 18px Arial, Sans-serif ;
+    font-weight: bold;
+}
+
+.label {
+    fill: black;
+    font: 12px Arial, Sans-serif;
+}
+
+.axis_label {
+    fill: black;
+    font: 14px Arial, Sans-serif;
 }
 
 svg.loading {
@@ -73,6 +112,7 @@ svg.loading {
 }
 
 .card .title {
+    font: 15px Arial, Sans-serif;
     font-weight: bold;
     text-align: center;
     margin: 0 0 10px 0;
@@ -83,6 +123,19 @@ svg.loading {
 
 .card .card-body {
     padding: 0 7px 7px 7px;
+    font: 14px Arial, Sans-serif;
+}
+
+/* Demand Dashboard */
+.small-text {
+	font-size: 0.6em;
+	margin-top: 5px;
+}
+
+/* Demand Dashboard */
+.small-text {
+	font-size: 0.6em;
+	margin-top: 5px;
 }
 
 /* Demand Dashboard */
@@ -111,7 +164,7 @@ path.selected {
 /* Data Selectors Card */
 #data-selectors {
     top: 25px;
-    right: 2%;
+    left: 2%;
 }
 
 .card-body {
@@ -124,8 +177,8 @@ ul.no-dots li {
 
 /* New Sources Card */
 #new-sources {
-    top: 200px;
-    right: 2%;
+    bottom: 220px;
+    left: 2%;
 }
 
 #new-sources > div {
@@ -154,7 +207,7 @@ ul.no-dots li {
 /* Plant Details Card */
 #plant-details {
     /* top: 350px; */
-    right: 2%;
+    left: 2%;
     bottom: 2%;
 }
 

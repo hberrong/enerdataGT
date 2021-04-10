@@ -38,6 +38,7 @@ var map_zoomer = d3.zoom().scaleExtent(ZOOM_CONSTRAINTS).on("zoom", zoom_map);
 
 // Create svg
 var svg = d3.select("div#choropleth").append("svg")
+	.attr("id", "svg_choropleth")
 	.call(map_zoomer)
 	.on("click", reset_zoom);
 const SVG_BOUNDS = svg.node().getBoundingClientRect();
@@ -78,7 +79,7 @@ var plant_tooltip = d3.tip()
   	    .offset([-10, 0])
   	    .html(p => {
     	      return "<strong>Plant Name:</strong> <span style='color:white'>" + p.name + "</span><br>" +
-	        "<strong>Capacity:</strong> <span style='color:white'>" + Math.round(p.capacity) + "<strong> MW</strong>" + "</span>";
+	          "<strong>Capacity:</strong> <span style='color:white'>" + Math.round(p.capacity) + "<strong> MW</strong>" + "</span>";
   	    })
 svg.call(plant_tooltip);
 
@@ -113,20 +114,6 @@ function getMin(arr, prop) {
 	return min;
 }
 
-
-// Create demand dashboard - function
-function updateDemandDashboard() {
-	var year = d3.select("#selectButton").property("value");
-	var data = demand.find(d => d.year == year && d.state == state_selected);
-
-	// https://www.codegrepper.com/code-examples/whatever/how+to+remove+dots+in+unordered+list+html
-	d3.select("#demand-title").text(`Energy Demand (${state_selected})`);
-	d3.select("#demand-total").text(`Total: ${data.total} MW`);
-	d3.select("#demand-residential").text(`Residential: ${data.residential} MW`);
-	d3.select("#demand-commercial").text(`Commercial: ${data.commercial} MW`);
-	d3.select("#demand-industrial").text(`Industrial: ${data.industrial} MW`);
-}
-
 // Load map
 d3.json("united_states.json").then(mapData => createMap(mapData));
 
@@ -155,20 +142,16 @@ Promise.all([
 
 		return new_plant;
 	}),
-	d3.csv("data/demand.csv", d => {
+
+  d3.csv("data/demand.csv", function(d) {
 		return {
-			year: d.YEAR,
-			st: d.ST,
-			state: d.STATE,
-			residential: d.RESIDENTIAL,
-			commercial: d.COMMERCIAL,
-			industrial: d.INDUSTRIAL,
-			other: d.OTHER,
-			transportation: d.TRANSPORTATION,
-			total: d.TOTAL
-		}
-	}),
-	d3.xml("images/biomass.svg"),
+		year: d.YEAR,
+		st: d.ST,
+		state: d.STATE,
+		total: parseInt(d.TOTAL.replace(/,/g,""))
+	  }}),
+
+  d3.xml("images/biomass.svg"),
 	d3.xml("images/coal.svg"),
 	d3.xml("images/geothermal.svg"),
 	d3.xml("images/hydro.svg"),
@@ -182,32 +165,13 @@ Promise.all([
 	d3.xml("images/wind.svg"),
 	d3.xml("images/wood.svg"),
 ]).then(([powerplant_data, demandData, biomass_svg, coal_svg, geothermal_svg, hydro_svg, natural_gas_svg, nuclear_svg, other_fossil_gasses_svg, other_svg, petroleum_svg, pumped_storage_svg, solar_svg, wind_svg, wood_svg]) => {
-	plants = powerplant_data;
+
+  plants = powerplant_data; // new capacity, will update with addition of new plants
 	d3.select("#powerplants-selector").attr("disabled", null);
 
-	console.log(demandData);
-    // Get a list with all the years from the dataset
-    var unique_years = new Set();
-	demandData.forEach(d => unique_years.add(d.year));
-    var years_list = [...unique_years];
-
+	//console.log(demandData);
 	demand = demandData;
-
-    // enter code to append the year options to the dropdown
-    d3.select("#selectButton")
-	    .selectAll("option")
-	    .data(years_list)
-	    .enter()
-	    .append("option")
-	    .text(d => d)
-	    .attr("value", d => d);
-
-    // event listener for the dropdown. Update demand dashboard when selection changes.
-    d3.select("#selectButton")
-	    .on("change", updateDemandDashboard);
-
-	updateDemandDashboard();
-	updateGenerationDashboard();
+	generation = powerplant_data.filter(f => f); // current capacity, will not change
 
 	images = {
 		biomass: biomass_svg.getElementsByTagName("path")[0].getAttribute("d"),
@@ -223,9 +187,13 @@ Promise.all([
 		solar: solar_svg.getElementsByTagName("path")[0].getAttribute("d"),
 		wind: wind_svg.getElementsByTagName("path")[0].getAttribute("d"),
 		wood: wood_svg.getElementsByTagName("path")[0].getAttribute("d")
-	};
+	}
 	// display_powerplants();
-});
+	createPlots(demand, generation, plants, "United States"); // generate default plot of US
+
+ }).catch(function(error) {
+	 console.log(error)
+ });
 
 function update_displayed_plants() {
 	if (powerplant_toggle.property("checked")) {
@@ -261,18 +229,6 @@ function display_powerplants() {
 
 function hide_powerplants() {
 	plant_g.selectAll("path").remove();
-}
-
-function updateGenerationDashboard() {
-	var plants_to_display = get_plants_in_state(state_selected);
-	var total_gen = plants_to_display.reduce((a,b) => a + b.capacity, 0.0);
-	var total_renewable = plants_to_display.filter(p => p.is_renewable).reduce((a,b) => a + b.capacity, 0.0);
-	var total_nonrenewable = plants_to_display.filter(p => !p.is_renewable).reduce((a,b) => a + b.capacity, 0.0);
-
-	d3.select("#generation_title").text(`Current Energy Generation Capacity (${state_selected})`);
-	d3.select("#generation_total").text(`Total Energy Capacity: ${Math.round(total_gen)} MW`);
-	d3.select("#generation_renwable").text(`Total from Renewable Sources: ${Math.round(total_renewable)} MW`);
-	d3.select("#generation_nonrenewable").text(`Total from Non-Renewable Sources: ${Math.round(total_nonrenewable)} MW`);
 }
 
 // Create map function
@@ -325,9 +281,8 @@ function zoom_state(state, idx, ele) {
 				.translate((x1 + x2) / -2, (y1 + y2) / -2));	// Now move zoomed in state to center
 	}
 
-	update_displayed_plants();
-	updateDemandDashboard();
-	updateGenerationDashboard();
+  update_displayed_plants();
+	createPlots(demand, generation, plants, state_selected);
 }
 
 function zoom_map(datum, idx, ele) {
@@ -395,6 +350,7 @@ function get_color_scale(value,data_to_load){
 
 
 function set_color_domain(d,data_to_load){
+	console.log(d);
 	if (data_to_load == "wind"){
 		 wind_d = wind_color.domain([
 		  getMin(d.features,'capacity_mw'),
@@ -404,13 +360,12 @@ function set_color_domain(d,data_to_load){
 		return geothermal_color.domain([
 			'>15','10-15','5-10','4-5','3-4','2-3','1-2','0.5-1','0.1-0.5','<0.1'
 		]);
-	}
- else if (data_to_load == "solar"){
-	return solar_d = solar_color.domain([
-	 getMin(d.features,'capacity_mw'),
-	 getMax(d.features,'capacity_mw')])
- return solar_d
-}
+	} else if (data_to_load == "solar"){
+	  solar_d = solar_color.domain([
+	    getMin(d.features,'capacity_mw'),
+	    getMax(d.features,'capacity_mw')])
+    return solar_d
+  }
 }
 
 function remove_data(data_to_remove) {
@@ -496,9 +451,10 @@ function update_plant_details() {
 	current_plant.lat = parseFloat(plant_lat_input.property("value"));
 	current_plant.lng = parseFloat(plant_lng_input.property("value"));
 	current_plant.plant_type = plant_type_select.property("value");
-	current_plant.capacity = parseFloat(plant_capacity_input.property("value"));
+	current_plant.capacity = parseFloat(plant_capacity_input.property("value")*1000);
 	// console.log(plants);
 	update_displayed_plants();
+	createPlots(demand, generation, plants, state_selected); // update plot
 }
 
 function reset_plant_details() {
@@ -534,8 +490,369 @@ function get_state_for_lat_lng(lat_lng) {
 			return state.properties.NAME;
 		}
 	}
-
 	return null;
+}
+
+// Define margins/size for data viz
+var bar_margin = {top: 50, right: 20, bottom: 100, left: 50},
+w_bar = 300,
+h_bar = 100;
+
+var line_margin = {top: 35, right: 20, bottom: 115, left: 50},
+w_line = 300,
+h_line = 150;
+
+// Append svg for capacity bar chart
+var svg_plot = d3.select("div#data-viz").append("svg")
+	.attr("id", "barchart")
+	.attr("width", w_bar + bar_margin.right + bar_margin.left)
+	.attr("height", h_bar + bar_margin.bottom + bar_margin.top)
+	.append("g")
+	.attr("transform", "translate(" + bar_margin.left + "," + bar_margin.top + ")");
+
+// Append svg for demand forecast line graph
+var svg_line = d3.select("div#demand-viz").append("svg")
+	.attr("id", "line graph")
+	.attr("width", w_bar + line_margin.right + line_margin.left)
+	.attr("height", h_bar + line_margin.bottom + line_margin.top)
+	.append("g")
+	.attr("transform", "translate(" + line_margin.left + "," + line_margin.top + ")");
+
+function createPlots(demand, generation, plants, state) {
+	svg_line.selectAll("*").remove();
+
+	const filtered_forecast_data = demand.filter(function(d) {return d.state == state; }),
+	time_conv = d3.timeParse("%Y"),
+	forecast_data = [],
+	circle_data = [],
+	circle_years = ["1990", "2000", "2010", "2020", "2030", "2040", "2049"]
+
+	// convert forecast data for line graph
+	for (let i = 0; i < filtered_forecast_data.length; i++) {
+		const forecast = {
+			year: time_conv(filtered_forecast_data[i].year),
+			total: filtered_forecast_data[i].total/365/24/1000 // MWh to GW conversion
+		}
+		forecast_data.push(forecast);
+	}
+	
+	// create array of data for circle points
+	for (let j = 0; j < circle_years.length; j++) {
+		const circle = filtered_forecast_data.find(f => f.year == circle_years[j]);
+		const circle2 = {
+			year: time_conv(circle.year),
+			total: circle.total/365/24/1000 // MWh to GW conversion
+		}
+		circle_data.push(circle2);
+	}
+	
+	//----------------------------FORECAST LINE GRAPH----------------------------//
+	// define forecast demand scales
+	var min_date = d3.min(forecast_data, function(d) {
+		return d.year
+		})
+	var max_date = d3.max(forecast_data, function(d) {
+			return d.year
+			})
+	var max_tot = d3.max(forecast_data, function(d) {
+		return d.total
+		})
+
+	var x_dem_scale = d3.scaleTime()
+		.domain([min_date, max_date])
+		.range([0, w_line]);
+
+	var y_dem_scale = d3.scaleLinear()
+		.domain([0, max_tot])
+		.range([h_line, 0]);
+
+	// add axes
+	svg_line.append("g")
+		.attr("class", "x axis")
+		.attr("transform", "translate(0, " + (h_line) + ")")
+		.call(d3.axisBottom()
+			.ticks(5)
+			.tickFormat(d3.timeFormat('%Y'))
+			.scale(x_dem_scale));
+
+	svg_line.append("g")
+		.attr("class", "y axis")
+		.call(d3.axisLeft(y_dem_scale))
+
+	// create a path object for the forecast line
+	svg_line.append("path")
+		.datum(forecast_data)
+		.attr("fill", "none")
+		.attr("stroke", "grey")
+		.attr("stroke-width", 1.5)
+		.attr("d", d3.line()
+			.x(function(d) { return x_dem_scale(d.year); })
+			.y(function(d) { return y_dem_scale(d.total); })
+			.curve(d3.curveMonotoneX)
+			);
+	
+	// Create default capacity plot for 2020
+	createCapacityPlot(demand, generation, plants, state, "2020");
+
+	// add circles for selected years and event handler for choosing demand year
+	svg_line.selectAll(".circles")
+		.data(circle_data)
+		.enter()
+		.append("circle")
+		.attr("r", 4)
+		.attr("fill", "red")
+		.attr("cx", function(d) { return x_dem_scale(d.year); })
+		.attr("cy", function(d) { return y_dem_scale(d.total); })
+		.on("mouseover", function(f) {
+			createCapacityPlot(demand, generation, plants, state, f.year.getFullYear().toString());
+	        d3.select(this).attr("r", 8);
+		})
+		.on("mouseout", function(f) {
+			createCapacityPlot(demand, generation, plants, state, "2020");
+	        d3.select(this).attr("r", 4);
+		});
+
+	// add axes labels and titles
+	svg_line.append("text")
+		.attr("class", "axis_label")
+		.attr("id","x_axis_label")
+		.attr("text-anchor", "middle")
+		.attr("x", (w_line - line_margin.left - line_margin.right)/2 +line_margin.left/2)
+		.attr("y", h_line + line_margin.bottom/3)
+		.text("Year");
+
+	svg_line.append("text")
+		.attr("class", "axis_label")
+		.attr("id","y_axis_label")
+		.attr("text-anchor", "middle")
+		.attr("transform", "rotate(-90)")
+		.attr("x", -h_line/2)
+		.attr("y", -line_margin.left/1.25)
+		.text("Energy Demand (GW)");
+
+	svg_line.append("text")    
+		.attr("class", "chart_title")
+		.attr("id","chart_title")
+		.attr("x", (w_line - line_margin.left - line_margin.right)/2 + line_margin.left/2.5)
+		.attr("y", -line_margin.top/2.3)
+		.style("text-anchor", "middle")
+		.text("Energy Demand for " + state)
+		.style("font-size", "15px");
+
+	svg_line.append("text")    
+		.attr("class", "label")
+		.attr("id","Forecast instructions")
+		.attr("x", (w_line - line_margin.left - line_margin.right)/2 + line_margin.left/2.5)
+		.attr("y", h_line + line_margin.bottom/2)
+		.style("text-anchor", "middle")
+		.style("font-size", "10 px")
+		.text("Mouseover circle to compare energy demand to capacity");
+}
+
+function createCapacityPlot(demand, generation, plants, state, year) {
+	svg_plot.selectAll("*").remove();
+
+	//----------------------------FILTER DATA AND CALCULATIONS----------------------------//
+	// filter DEMAND for the year and state // 
+	filtered_dem = demand.filter(function(d) {return d.state == state && d.year == year; });
+	const filtered_dem_data = filtered_dem[0];
+	
+	// Get TOTAL energy for current and new capacity
+	if(state_selected != "United States"){
+		filtered_gen = generation.filter(function(d) {return d.state == state; });
+		new_gen = plants.filter(function(d) {return d.state == state; });
+	} else {
+		filtered_gen = generation;
+		new_gen = plants;
+	}
+
+	// TOTAL current capacity
+	var total_generation = [];
+	filtered_gen.forEach(function(d) {
+		total_generation.push(d.capacity)
+	});
+	sum_generation = total_generation.reduce(function(a,b) {return a+b;},0)
+	//sum_generation = sum_generation*365*24 // conversion to MWh
+
+	// TOTAL new capacity
+	var new_total_generation = [];
+	new_gen.forEach(function(d) {
+		new_total_generation.push(d.capacity)
+	});
+	new_sum_generation = new_total_generation.reduce(function(a,b) {return a+b;},0)
+	// new_sum_generation = new_sum_generation*365*24 // conversion to MWh
+
+	// Get total current renewable energy
+	filtered_renewables = filtered_gen.filter(function(d) {return d.is_renewable == true; });
+	var total_renewable = [];
+	filtered_renewables.forEach(function(d) {
+		total_renewable.push(d.capacity)
+	});
+	sum_renewable = total_renewable.reduce(function(a,b) {return a+b;},0)
+	// sum_renewable = sum_renewable*365*24 // conversion to MWh
+
+	// Get total new renewable energy
+	new_filtered_renewables = new_gen.filter(function(d) {return d.is_renewable == true; });
+	var new_total_renewable = [];
+	new_filtered_renewables.forEach(function(d) {
+		new_total_renewable.push(d.capacity)
+	});
+	new_sum_renewable = new_total_renewable.reduce(function(a,b) {return a+b;},0)
+	// new_sum_renewable = new_sum_renewable*365*24 // conversion to MWh
+
+	// Get total current non-renewable energy
+	filtered_nonrenewables = filtered_gen.filter(function(d) {return d.is_renewable == false; });
+	var total_nonrenewable = [];
+	filtered_nonrenewables.forEach(function(d) {
+		total_nonrenewable.push(d.capacity)
+	});
+	sum_nonrenewable = total_nonrenewable.reduce(function(a,b) {return a+b;},0)
+	// sum_nonrenewable = sum_nonrenewable*365*24 // conversion to MWh
+
+	// Get total new non-renewable energy
+	new_filtered_nonrenewables = new_gen.filter(function(d) {return d.is_renewable == false; });
+	var new_total_nonrenewable = [];
+	new_filtered_nonrenewables.forEach(function(d) {
+		new_total_nonrenewable.push(d.capacity)
+	});
+	new_sum_nonrenewable = new_total_nonrenewable.reduce(function(a,b) {return a+b;},0)
+	// new_sum_nonrenewable = new_sum_nonrenewable*365*24 // conversion to MWh
+
+	// create array for both energy and demand data - note: all data is in MWh
+	const demand_data = {
+		label: "Energy Demand in " + filtered_dem_data.year,
+		year: filtered_dem_data.year,
+		total: filtered_dem_data.total/365/24/1000 // MWh to GW conversion
+	},
+	graph_data = [{
+		label: "Current",
+		total: sum_generation/1000, // capacity data is in GW for easier viewing
+		Renewable: (sum_renewable/1000), // capacity data is in GW for easier viewing
+		Nonrenewable: (sum_nonrenewable/1000) // capacity data is in GW for easier viewing
+	 	}, {
+		label: "New",
+		total: (new_sum_generation/1000), // capacity data is in GW for easier viewing
+		Renewable: (new_sum_renewable/1000), // capacity data is in GW for easier viewing
+		Nonrenewable: (new_sum_nonrenewable/1000) // capacity data is in GW for easier viewing
+	}],
+	label_info = {
+		state: filtered_dem_data.state,
+		year: filtered_dem_data.year
+	},
+	keys = d3.keys(graph_data[0]).slice(2);
+
+	//----------------------------CAPACITY BAR GRAPH----------------------------//
+	var stacked = d3.stack().keys(keys)(graph_data)
+		.map(d => (d.forEach(v => v.key = d.key), d));
+
+	// define scales
+	var colors = d3.scaleOrdinal()
+		.domain(keys)
+		.range(["#577590", "#f9844a"]),
+	x_scale = d3.scaleLinear()
+		.domain([0, d3.max(graph_data, (function (d) {
+			return d.total;
+			}))])
+		.range([0, w_bar]),
+	y_scale = d3.scaleBand()
+		.domain(graph_data.map(function (d) {
+			return d.label;}))
+		.range([h_bar, 0])
+		.padding(0.1);
+
+	// stacked bar graph reference: https://bl.ocks.org/Andrew-Reid/0aedd5f3fb8b099e3e10690bd38bd458
+	var bars = svg_plot.selectAll(".stack")
+		.data(stacked)
+		.enter()
+		.append("g")
+		.attr("class", "stack")
+		.style("fill", d => colors(d.key));
+
+	bars.selectAll("rect")
+		.data(function(d) { return d; })
+		.enter()
+		.append("rect")
+		  .attr("x", d => x_scale(d[0]))
+		  .attr("y", d => y_scale(d.data.label))
+		  .attr("width", d => x_scale(d[1]) - x_scale(d[0]))
+		  .attr("height", y_scale.bandwidth());
+
+	// append axes and titles
+	svg_plot.append("g")
+		.attr("class", "y axis")
+		.call(d3.axisLeft(y_scale));
+
+	svg_plot.append("g")
+		.attr("class", "x axis")
+		.attr("transform", "translate(0, " + (h_bar) + ")")
+		.call(d3.axisBottom()
+			.scale(x_scale)
+			.tickSize(-h_bar));
+	
+	// add demand line to plot
+	svg_plot.append("g")
+		.attr("class", "line")
+		.append("line")
+		.attr("id","demand_line")
+		.attr("x1", function(d) {return x_scale(demand_data.total); })
+		.attr("y1", 0)
+		.attr("x2", function(d) {return x_scale(demand_data.total); })
+		.attr("y2", (h_bar));
+
+	// add legend
+	svg_plot.append("text")
+		.attr("id","legend_demand")
+		.attr("class", "label")
+		.attr("x", (w_bar - bar_margin.left - bar_margin.right)/2 + bar_margin.left - 10)
+		.attr("y", h_bar + bar_margin.top*1.75)
+		.style("text-anchor", "middle")
+		.text("Energy Demand in " + label_info.year)
+
+	svg_plot.append("g")
+		.attr("class", "line")
+		.append("line")
+		.attr("id","legend_line")
+		.attr("x1", (w_bar - bar_margin.left - bar_margin.right)/2.5 - 10)
+		.attr("y1", h_bar + bar_margin.top*1.65)
+		.attr("x2", (w_bar/1.5 - bar_margin.left - bar_margin.right)/2 - 10)
+		.attr("y2", h_bar + bar_margin.top*1.65);
+
+	var legend = svg_plot.append("g")
+		.attr("id", "legend")
+		.attr("class", "label")
+		.attr("text-anchor", "end")
+		.selectAll("g")
+		.data(keys.slice())
+		.enter().append("g")
+	
+	legend.append("rect")
+		.attr("x", function(d, i) {return (bar_margin.left - bar_margin.right) + i*2.15*bar_margin.left})
+		.attr("y", h_bar + bar_margin.top*1.15)
+		.attr("width", 19)
+		.attr("height", 15)
+		.attr("fill", colors);
+  
+	legend.append("text")
+		.attr("x", function(d, i) {return (w_bar - bar_margin.left - bar_margin.right)/2 + i*2.5*bar_margin.left})
+		.attr("y", h_bar + bar_margin.top*1.4)
+		.text(function(d) { return d; });
+
+	svg_plot.append("text")
+		.attr("class", "axis_label")
+		.attr("id","x_axis_label")
+		.attr("text-anchor", "middle")
+		.attr("x", (w_bar - bar_margin.left - bar_margin.right)/2 +bar_margin.left/2)
+		.attr("y", h_bar + bar_margin.top/1.5)
+		.text("Energy Capacity (GW)");
+
+	svg_plot.append("text")    
+		.attr("class", "chart_title")
+		.attr("id","chart_title")
+		.attr("x", (w_bar - bar_margin.left - bar_margin.right)/2 + bar_margin.left/2.5)
+		.attr("y", 0 - bar_margin.top/2)
+		.style("text-anchor", "middle")
+		.style("font-size", "15px")
+		.text("New and Current Energy Capacity for " + label_info.state);
 }
 
 function get_plants_in_state(state) {

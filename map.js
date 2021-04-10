@@ -22,6 +22,11 @@ var selected_plant_id = -1;
 var map_bounds;
 var usJson = {};
 var images = {};
+var test
+
+
+
+
 
 // Fields
 var plant_lat_input = d3.select("#plant_lat");
@@ -185,7 +190,7 @@ Promise.all([
 	plants = powerplant_data;
 	d3.select("#powerplants-selector").attr("disabled", null);
 
-	console.log(demandData);
+	//console.log(demandData);
     // Get a list with all the years from the dataset
     var unique_years = new Set();
 	demandData.forEach(d => unique_years.add(d.year));
@@ -455,7 +460,7 @@ function create_new_plant(lat_lng, plant_type) {
 			lat: lat_lng[1],
 			plant_type: plant_type,
 			state: get_state_for_lat_lng(lat_lng),
-			capacity: 0,
+			capacity: get_capacity(lat_lng,plant_type),//get_capacity(lat_lng,plant_type),
 			sub_plants: {},
 			is_renewable: true,				// TODO: Fix this so it's not always true
 			name: `New Plant (#${next_plant_id})`
@@ -480,7 +485,7 @@ function create_new_plant(lat_lng, plant_type) {
 function set_plant_details_form() {
 	var current_plant = plants.find(p => p.id == selected_plant_id);
 	// console.log(`Looking for id ${selected_plant_id}`);
-	// console.log(current_plant);
+	 console.log(current_plant);
 
 	plant_lat_input.property("value", current_plant.lat);
 	plant_lng_input.property("value", current_plant.lng);
@@ -540,4 +545,54 @@ function get_state_for_lat_lng(lat_lng) {
 
 function get_plants_in_state(state) {
 	return plants.filter(p => (p.state == state) || (state == "United States"))
+}
+
+
+// function get_capacity(lat_lng,plant_type){
+// 	// set filepath for state corresponding to lat_lng
+// 	s = get_state_for_lat_lng(lat_lng)
+// 	fileloc = "data/state_data/"
+// 	f_name = fileloc.concat(s,".json")
+//
+// 	//var c = []; //capacity
+// 	// read state specific data
+// 	d3.json(f_name).then(d => {
+// 		states_capacity = d
+// 		// for (var i=0 ; i<d.features.length ; i++){
+// 		// 	if (d3.geoContains(d.features[i],lat_lng)==true){
+// 		// 		c.push(d.features[i].properties[plant_type])
+// 		// 			}
+// 		// }
+// 	})
+//
+// //	return c
+// }
+
+function get_capacity(lat_lng,plant_type){
+	s = get_state_for_lat_lng(lat_lng)
+	fileloc = "data/state_data/"
+	f_name = fileloc.concat(s,".json")
+
+  var t = d3.json(f_name).then(function(data){
+		var c = 0
+		for (var i=0 ; i<data.features.length ; i++){
+			if (d3.geoContains(data.features[i],lat_lng)==true){
+				c= data.features[i].properties[plant_type]
+					}
+		}
+		return c
+});
+return t.then()
+}
+
+
+
+function get_capacity_from_json(d) {
+	var c = 0
+	for (var i=0 ; i<d.features.length ; i++){
+		if (d3.geoContains(d.features[i],lat_lng)==true){
+			c= d.features[i].properties[plant_type]
+				}
+	}
+	return c
 }

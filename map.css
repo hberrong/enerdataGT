@@ -55,22 +55,13 @@ body {
     position: absolute;
     bottom: 2%;
     right: 2%;
-    width: 400px;
-    height: 250px;
-    z-index: 1;
-}
-
-#demand-viz {
-    position: absolute;
-    top: 2%;
-    right: 2%;
-    width: 400px;
-    height: 250px;
+    width: 370px;
+    height: 350px;
     z-index: 1;
 }
 
 .line {
-    stroke:rgb(255, 0, 0);
+    stroke: "grey";
     stroke-width: 3px;
 }
 

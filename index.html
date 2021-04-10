@@ -11,7 +11,7 @@
   <script type="text/javascript" src="lib/d3-geo-projection.v2.min.js"></script>
   <script type="text/javascript" src="lib/topojson.v2.min.js"></script>
   <script type="text/javascript" src="lib/d3-tip.min.js"></script>
-  
+
   <link rel="stylesheet" href="map.css"/>
 </head>
 
@@ -32,8 +32,9 @@
       <p class="title">Step 1: Load Data</p>
       <ul class="card-body no-dots">
         <li><input type="checkbox" id="powerplants-selector" value="powerplants" disabled="disabled"><label for="powerplants-selector">Power Plants</label></li>
-        <li><input type="checkbox" id="solar-selector" class="data-selector" value="solar" disabled="disabled"><label for="solar-selector" disabled="disabled">Solar</label></li>
+        <li><input type="checkbox" id="solar-selector" class="data-selector" value="solar"><label for="solar-selector" disabled="disabled">Solar</label></li>
         <li><input type="checkbox" id="geothermal-selector" class="data-selector" value="geothermal"><label for="geothermal-selector">Geothermal</label></li>
+        <li><input type="checkbox" id="wind-selector" class="data-selector" value="wind"><label for="wind-selector">Wind</label></li>
       </ul>
     </div>
 
@@ -55,7 +56,7 @@
           <img id="wood-source" class="new-source" src="images/wood.svg" alt="Wood" width="24px">
         </div>
     </div>
-    
+
     <div id="plant-details" class="card">
       <p class="title">Step 3: Update Plant Details</p>
       <form class="card-body">

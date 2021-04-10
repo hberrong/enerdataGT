@@ -138,6 +138,12 @@ svg.loading {
 	margin-top: 5px;
 }
 
+/* Demand Dashboard */
+.small-text {
+	font-size: 0.6em;
+	margin-top: 5px;
+}
+
 /* States */
 #map path {
     fill: rgb(75, 75, 75);

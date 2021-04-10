@@ -609,7 +609,12 @@ function createPlots(demand, generation, plants, state) {
 	label_info = {
 		state: state
 	},
-	keys = d3.keys(graph_data[0]).slice(2);
+	keys = d3.keys(graph_data[0]).slice(2),
+	tot_scale = [graph_data[0].total, graph_data[1].total];
+
+	for (let i = 0; i < forecast_data.length; i++) {
+		tot_scale.push(forecast_data[i].total);  // add forecast totals to array for y scale
+	}
 	
 	//----------------------------SCALES---------------------------//
 	// define forecast demand scales
@@ -619,9 +624,7 @@ function createPlots(demand, generation, plants, state) {
 	var max_date = d3.max(forecast_data, function(d) {
 			return d.year
 			})
-	var max_tot = d3.max(graph_data, (function (d) {
-		return d.total;
-		}))
+	var max_tot = d3.max(tot_scale);
 
 	// define scales
 	var x_dem_scale = d3.scaleTime() // forecast line x scale for dates
@@ -630,7 +633,7 @@ function createPlots(demand, generation, plants, state) {
 		colors = d3.scaleOrdinal() // color scale for renewable vs non renewable
 			.domain(keys)
 			.range(["#0E6957", "#88FF6A"]),
-		y_scale = d3.scaleLinear() // y-axis scale, using capacity since it's is always larger than demand
+		y_scale = d3.scaleLinear() // y-axis scale
 			.domain([0, max_tot])
 				.range([h_line, 0]),
 		x_scale = d3.scaleBand() // bar graph x scale for current vs new capacity
@@ -664,7 +667,7 @@ function createPlots(demand, generation, plants, state) {
 	svg_line.append("path")
 		.attr("class", "line")
 		.datum(forecast_data)
-		.attr("stroke", "grey")
+		.attr("stroke", "white")
 		.attr("stroke-width", 3)
 		.attr("d", d3.line()
 			.x(function(d) { return x_dem_scale(d.year); })
@@ -679,19 +682,20 @@ function createPlots(demand, generation, plants, state) {
 		.data(circle_data)
 		.enter();
 	circle.append("circle")
-		.attr("r", 12.5)
-		.attr("fill", "grey")
+		.attr("r", 13)
+		.attr("fill", "white")
 		.attr("cx", function(d) { return x_dem_scale(d.year); })
 		.attr("cy", function(d) { return y_scale(d.total); });
 	circle.append("text")
 		.attr("class", "label")
 		.attr("dx", function(d) { return x_dem_scale(d.year); })
-		.attr("dy", function(d) { return y_scale(d.total) + 3; })
+		.attr("dy", function(d) { return y_scale(d.total) + 3.5; })
 		//.text(function(d) { return "'" + date_format(d.year) }) // "'10" format
 		.text(function(d) { return d.year.getFullYear() }) // "2010" year format
 		.style("fill", 'black')
 		.style("text-anchor", "middle")
-		.style("font-size", "11px");
+		.style("font-size", "11px")
+		.style("font-weight", "700");
 
 	//----------------------------AXES AND TITLES---------------------------//
 	// svg_line.append("g") // x axis, dates
@@ -755,13 +759,13 @@ function createPlots(demand, generation, plants, state) {
 		.attr("y1", h_line + line_margin.bottom/1.5 - 3)
 		.attr("x2",  w_line/1.8 + 70)
 		.attr("y2",  h_line + line_margin.bottom/1.5 - 3)
-		.attr("stroke", "grey")
+		.attr("stroke", "white")
 	svg_line.append("circle")
 		.attr("id","legend_circle")
-		.attr("r", 12.5)
-		.attr("fill", "grey")
+		.attr("r", 13)
+		.attr("fill", "white")
 		.attr("cx", w_line/1.8 + 50)
-		.attr("cy", h_line + line_margin.bottom/1.5 - 3);
+		.attr("cy", h_line + line_margin.bottom/1.5 - 3.5);
 	svg_line.append("text")
 		.attr("id","legend_year")
 		.attr("class", "label")
@@ -769,6 +773,7 @@ function createPlots(demand, generation, plants, state) {
 		.attr("y", h_line + line_margin.bottom/1.5)
 		.style("text-anchor", "middle")
 		.style("font-size", "11px")
+		.style("font-weight", "700")
 		.text("Year");
 	svg_line.append("text")
 		.attr("id","legend_demand")

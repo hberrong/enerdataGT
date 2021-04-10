@@ -69,13 +69,6 @@ body {
     z-index: 1;
 }
 
-/* #selectButton {
-    position: absolute;
-    bottom: 260px;
-    left: 10px;
-    z-index: 2;
-} */
-
 .line {
     stroke:rgb(255, 0, 0);
     stroke-width: 3px;
@@ -131,6 +124,12 @@ svg.loading {
 .card .card-body {
     padding: 0 7px 7px 7px;
     font: 14px Arial, Sans-serif;
+}
+
+/* Demand Dashboard */
+.small-text {
+	font-size: 0.6em;
+	margin-top: 5px;
 }
 
 /* Demand Dashboard */

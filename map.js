@@ -258,6 +258,40 @@ function createMap(us) {
 }
 
 function reset_zoom(transition_speed=ZOOM_TRANSITION_SPEED) {
+	// remove data
+ var ps = d3.selectAll("#powerplants-selector").property('checked',false)
+ ps.property('checked',false)
+
+ var ss = d3.selectAll("#solar-selector")
+ ss.property('checked',false)
+ remove_data(ss.property('value'))
+
+ var ws = d3.selectAll("#wind-selector")
+ ws.property('checked',false)
+ remove_data(ws.property('value'))
+
+ var gs = d3.selectAll("#geothermal-selector")
+ gs.property('checked',false)
+ remove_data(gs.property('value'))
+
+	//hide selectors when map zoomed out
+	d3.selectAll("#data-selectors")
+	.transition()
+	.duration(transition_speed)
+		.style('display', 'none')
+
+	d3.selectAll("#new-sources")
+	.transition()
+	.duration(transition_speed)
+		.style('display', 'none')
+
+	d3.selectAll("#plant-details")
+	.transition()
+	.duration(transition_speed)
+		.style('display', 'none')
+
+
+
 	const [[x1, y1], [x2, y2]] = map_bounds;
 	states.classed("selected", false);
 	svg.transition()
@@ -265,12 +299,32 @@ function reset_zoom(transition_speed=ZOOM_TRANSITION_SPEED) {
 		.call(map_zoomer.transform, d3.zoomIdentity.translate(SVG_SIZE.WIDTH / 2, SVG_SIZE.HEIGHT / 2).scale(1.5).translate((x1 + x2) / -2, (y1 + y2) / -2));
 }
 
+
 // https://observablehq.com/@d3/zoom-to-bounding-box?collection=@d3/d3-zoom
 function zoom_state(state, idx, ele) {
 	var current_state = d3.select(this);
+	var b = d3.selectAll("#data-selectors")
+
+
+	// show the data_selectors, new_sources, and plant_details now that a state is selected
+	d3.selectAll("#data-selectors")
+	.transition()
+	.delay(ZOOM_TRANSITION_SPEED)
+		.style('display', 'block')
+
+	d3.selectAll("#new-sources")
+	.transition()
+	.delay(ZOOM_TRANSITION_SPEED)
+		.style('display', 'block')
+
+	d3.selectAll("#plant-details")
+	.transition()
+	.delay(ZOOM_TRANSITION_SPEED)
+		.style('display', 'block')
 
 	// Update state_selected, which will be used to update dashboards
 	state_selected = current_state.datum().properties.NAME;
+
 
 	if (current_state.classed("selected")) {
 		reset_zoom();
@@ -286,6 +340,9 @@ function zoom_state(state, idx, ele) {
 				.translate(SVG_SIZE.WIDTH / 2, SVG_SIZE.HEIGHT / 2)		// Place in center of SVG
 				.scale(Math.min(ZOOM_CONSTRAINTS[1], 0.6 / Math.max((x2 - x1) / SVG_SIZE.WIDTH, (y2 - y1) / SVG_SIZE.HEIGHT)))	// Zoom in on state
 				.translate((x1 + x2) / -2, (y1 + y2) / -2));	// Now move zoomed in state to center
+
+
+
 	}
 
   update_displayed_plants();
@@ -308,7 +365,8 @@ function select_data() {
 function load_data(data_to_load) {
 	svg.classed("loading", true);
 	loader.classed("hidden", false);
-	filename = DATA_TO_FILENAME[data_to_load];
+	//filename = DATA_TO_FILENAME[data_to_load];
+	filename = "data/state_data/" + state_selected + ".json"
 	d3.json(filename).then(d => {
 		var g = map_g.append("g")
 			.attr("id", data_to_load + "-data");
@@ -316,14 +374,15 @@ function load_data(data_to_load) {
 			// set input domain for color scale
 			set_color_domain(d,data_to_load)
 
+
 		g.selectAll("path")
 			.data(d.features)
 			.enter()
 			.append("path")
 			.style("fill", function(d) {
 				//Get data value
-				var value = d.properties.capacity_mw;
-
+				//var value = d.propertiescapacity_mw;
+				var value = d.properties[data_to_load]
 				if (value) {
 					//If value exists…
 					return get_color_scale(value,data_to_load);
@@ -334,7 +393,46 @@ function load_data(data_to_load) {
 
 			})
 			.style("stroke", "none")
-			.attr("d", geoGenerator);
+			.attr("d", geoGenerator)
+
+			//add graident legend
+			const defs = svg.append("defs");
+
+			//Define grey sequential color scale
+			var greys = d3.interpolateGreys;
+			var wind_color = d3.scaleSequential(greys);
+
+  		const linearGradient = defs.append("linearGradient")
+      	.attr("id", "linear-gradient");
+
+		  linearGradient.selectAll("stop")
+		    .data(wind_color.ticks().map((t, i, n) => ({ offset: `${100*i/n.length}%`, color: wind_color(t) })))
+		    .enter().append("stop")
+		    .attr("offset", d => d.offset)
+		    .attr("stop-color", d => d.color);
+
+			svg.append("g")
+				.append("rect")
+				.attr("height",20)
+				.attr("width",100)
+				.attr("x",250)
+				.attr("y",0)
+				.style("fill","url(#linear-gradient)")
+				.attr('transform' , 'rotate(270, '+300+',' +100 +') ')
+
+			svg.append("text")
+				.attr("x",195)
+				.attr("y",40)
+				.text("High")
+				.style("black")
+
+			svg.append("text")
+				.attr("x",195)
+				.attr("y",170)
+				.text("Low")
+				.style("black")
+
+
 		data_loaded.push(g);
 	}).catch(e => {
 		console.log(filename + " not found.\n" + e);
@@ -357,11 +455,10 @@ function get_color_scale(value,data_to_load){
 
 
 function set_color_domain(d,data_to_load){
-	console.log(d);
 	if (data_to_load == "wind"){
 		 wind_d = wind_color.domain([
-		  getMin(d.features,'capacity_mw'),
-			getMax(d.features,'capacity_mw')])
+		  getMin(d.features,data_to_load),
+			getMax(d.features,data_to_load)])
 		return wind_d
 	} else if (data_to_load == "geothermal"){
 		return geothermal_color.domain([
@@ -369,8 +466,8 @@ function set_color_domain(d,data_to_load){
 		]);
 	} else if (data_to_load == "solar"){
 	  solar_d = solar_color.domain([
-	    getMin(d.features,'capacity_mw'),
-	    getMax(d.features,'capacity_mw')])
+	    getMin(d.features,data_to_load),
+	    getMax(d.features,data_to_load)])
     return solar_d
   }
 }
@@ -882,11 +979,8 @@ function get_capacity(lat_lng, plant_type,plant_size,callback_fn) {
 		s = get_state_for_lat_lng(lat_lng)
 		fileloc = "data/state_data/"
 		f_name = fileloc.concat(s,".json")
-		console.log('get capacity')
-		console.log(lat_lng)
-		console.log(plant_type)
-		console.log(plant_size)
-		
+
+
 // map plant types to conversion factors for type and size
 var plant_map = {'wind':{'small':0.25,'medium':0.5,'large':1},
 'solar':{'small':1/24000,'medium':100/24000,'large':1000/24000},

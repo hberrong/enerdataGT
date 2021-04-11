@@ -144,7 +144,7 @@ Promise.all([
 		return new_plant;
 	}),
 
-  d3.csv("data/demand.csv", function(d) {
+  d3.csv("data/loadForecast.csv", function(d) {
 		return {
 		year: d.YEAR,
 		st: d.ST,

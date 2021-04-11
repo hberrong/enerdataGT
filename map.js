@@ -76,7 +76,7 @@ var geothermal_color = d3.scaleOrdinal()
 // Define Tool Tip
 var plant_tooltip = d3.tip()
   	    .attr('class', 'd3-tip')
-  	    .attr('id', 'plants')
+  	    .attr('id', 'plant-tip')
   	    .offset([-10, 0])
   	    .html(p => {
     	      return "<strong>Plant Name:</strong> <span style='color:white'>" + p.name + "</span><br>" +

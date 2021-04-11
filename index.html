@@ -60,11 +60,11 @@
     <div id="plant-details" class="card">
       <p class="title">Step 3: Update Plant Details</p>
       <form class="card-body">
-        <label for="plant_lat">Latitude</label>
+        <!-- <label for="plant_lat">Latitude</label>
         <input name="plant_lat" id="plant_lat" type="number" />
 
         <label for="plant_lng">Longitutde</label>
-        <input name="plant_lng" id="plant_lng" type="number" />
+        <input name="plant_lng" id="plant_lng" type="number" /> -->
 
         <label for="plant_type">Type</label>
         <select name="plant_type" id="plant_type">
@@ -83,8 +83,15 @@
             <option value="wood">Wood</option>
         </select>
 
-        <label for="plant_capacity">Capacity (GW)</label>
-        <input name="plant_capacity" id="plant_capacity" type="number" />
+        <label for="plant_size">Size</label>
+        <select name="plant_size" id="plant_size">
+            <option value="small">Small</option>
+            <option value="medium">Medium</option>
+            <option value="large">Large</option>
+        </select>
+
+        <label for="plant_capacity">Capacity (MW)</label>
+        <input name="plant_capacity" id="plant_capacity" type="number" readonly style="background-color:rgb(207, 203, 202)" />
 
         <button id="update_plant" class="left">Update</button>
         <button id="reset_plant" class="right">Reset</button>

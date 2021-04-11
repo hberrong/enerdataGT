@@ -8,7 +8,7 @@ const ZOOM_CONSTRAINTS = [1.5, 100];
 const ZOOM_TRANSITION_SPEED = 750;
 
 const DATA_TO_FILENAME = {
-	"solar":"data/solar_PV.json",
+	"solar":"data/nevada.json",
  	"wind": "data/wind_cleaned.json",
  	"geothermal": "data/geothermal_cleaned.json"
 }
@@ -32,9 +32,11 @@ var test
 var plant_lat_input = d3.select("#plant_lat");
 var plant_lng_input = d3.select("#plant_lng");
 var plant_type_select = d3.select("#plant_type");
+var plant_size_select = d3.select("#plant_size");
 var plant_capacity_input = d3.select("#plant_capacity")
 d3.select("#update_plant").on("click", update_plant_details);
 d3.select("#reset_plant").on("click", reset_plant_details);
+
 
 // Define projection and path required for Choropleth
 var projection = d3.geoAlbersUsa();
@@ -124,7 +126,7 @@ d3.json("united_states.json").then(mapData => createMap(mapData));
 
 // Load other data
 Promise.all([
-	d3.csv("data/powerplants_sanitized.csv", row => {
+	d3.csv("data/powerplants_fixed.csv", row => {
 		var plant_types = row["plant_types_all"].split(",");
 		var plant_caps = row["plant_caps_all"].split(",").map(x => parseFloat(x));
 		// console.log(plant_caps);
@@ -133,6 +135,7 @@ Promise.all([
 			lng: +row["longitude"],
 			lat: +row["latitude"],
 			plant_type: row["plant_type"],
+			plant_size: "small",
 			state: row["state_long"],
 			capacity: +row["total_cap"],
 			// state_short: d["state"],
@@ -174,7 +177,6 @@ Promise.all([
   plants = powerplant_data; // new capacity, will update with addition of new plants
 	d3.select("#powerplants-selector").attr("disabled", null);
 
-	//console.log(demandData);
 	demand = demandData;
 	generation = powerplant_data.filter(f => f); // current capacity, will not change
 
@@ -414,17 +416,20 @@ function create_new_plant(lat_lng, plant_type) {
 			lng: lat_lng[0],
 			lat: lat_lng[1],
 			plant_type: plant_type,
+			plant_size: 'small',
 			state: get_state_for_lat_lng(lat_lng),
-			capacity: get_capacity(lat_lng,plant_type),//get_capacity(lat_lng,plant_type),
+			//capacity:0,
 			sub_plants: {},
 			is_renewable: true,				// TODO: Fix this so it's not always true
 			name: `New Plant (#${next_plant_id})`
 		}
 
+		get_capacity(lat_lng, plant_type,new_plant.plant_size, function(c) {
+			new_plant['capacity'] = Math.round(c*10)/10
+		  plant_capacity_input.property("value", new_plant.capacity);})
 		selected_plant_id = next_plant_id;
-
 		plants.push(new_plant);
-		// console.log(new_plant);
+
 
 		update_displayed_plants();
 
@@ -440,24 +445,32 @@ function create_new_plant(lat_lng, plant_type) {
 function set_plant_details_form() {
 	var current_plant = plants.find(p => p.id == selected_plant_id);
 	// console.log(`Looking for id ${selected_plant_id}`);
-	 console.log(current_plant);
 
 	plant_lat_input.property("value", current_plant.lat);
 	plant_lng_input.property("value", current_plant.lng);
 	plant_type_select.property("value", current_plant.plant_type);
-	plant_capacity_input.property("value", current_plant.capacity);
+	plant_size_select.property("value", current_plant.plant_size);
+	//plant_capacity_input.property("value", current_plant.capacity);
 }
 
 function update_plant_details() {
 	d3.event.preventDefault();
 
 	current_plant = plants.find(p => p.id == selected_plant_id);
+
 	// var current_plant = plants[idx];
-	current_plant.lat = parseFloat(plant_lat_input.property("value"));
-	current_plant.lng = parseFloat(plant_lng_input.property("value"));
+	//current_plant.lat = parseFloat(plant_lat_input.property("value"));
+	//current_plant.lng = parseFloat(plant_lng_input.property("value"));
 	current_plant.plant_type = plant_type_select.property("value");
-	current_plant.capacity = parseFloat(plant_capacity_input.property("value")*1000);
-	// console.log(plants);
+	current_plant.plant_size = plant_size_select.property("value");
+	//current_plant.capacity = parseFloat(plant_capacity_input.property("value")*1000);
+
+	get_capacity([current_plant.lng,current_plant.lat],current_plant.plant_type,current_plant.plant_size,function(c) {
+
+		current_plant.capacity = Math.round(c)
+		plant_capacity_input.property("value", current_plant.capacity);
+})
+
 	update_displayed_plants();
 	createPlots(demand, generation, plants, state_selected); // update plot
 }
@@ -864,52 +877,30 @@ function get_plants_in_state(state) {
 	return plants.filter(p => (p.state == state) || (state == "United States"))
 }
 
-
-// function get_capacity(lat_lng,plant_type){
-// 	// set filepath for state corresponding to lat_lng
-// 	s = get_state_for_lat_lng(lat_lng)
-// 	fileloc = "data/state_data/"
-// 	f_name = fileloc.concat(s,".json")
-//
-// 	//var c = []; //capacity
-// 	// read state specific data
-// 	d3.json(f_name).then(d => {
-// 		states_capacity = d
-// 		// for (var i=0 ; i<d.features.length ; i++){
-// 		// 	if (d3.geoContains(d.features[i],lat_lng)==true){
-// 		// 		c.push(d.features[i].properties[plant_type])
-// 		// 			}
-// 		// }
-// 	})
-//
-// //	return c
-// }
-
-function get_capacity(lat_lng,plant_type){
-	s = get_state_for_lat_lng(lat_lng)
-	fileloc = "data/state_data/"
-	f_name = fileloc.concat(s,".json")
-
-  var t = d3.json(f_name).then(function(data){
-		var c = 0
-		for (var i=0 ; i<data.features.length ; i++){
-			if (d3.geoContains(data.features[i],lat_lng)==true){
-				c= data.features[i].properties[plant_type]
-					}
-		}
-		return c
-});
-return t.then()
-}
+function get_capacity(lat_lng, plant_type,plant_size,callback_fn) {
+	//set filepath for state corresponding to lat_lng
+		s = get_state_for_lat_lng(lat_lng)
+		fileloc = "data/state_data/"
+		f_name = fileloc.concat(s,".json")
+		console.log('get capacity')
+		console.log(lat_lng)
+		console.log(plant_type)
+		console.log(plant_size)
+		
+// map plant types to conversion factors for type and size
+var plant_map = {'wind':{'small':0.25,'medium':0.5,'large':1},
+'solar':{'small':1/24000,'medium':100/24000,'large':1000/24000},
+'geothermal':{'small':1,'medium':3,'large':5}}
 
 
+   d3.json(f_name).then(data=>{
+		 cap = data.features.find(f => d3.geoContains(f, lat_lng)).properties[plant_type];
 
-function get_capacity_from_json(d) {
-	var c = 0
-	for (var i=0 ; i<d.features.length ; i++){
-		if (d3.geoContains(d.features[i],lat_lng)==true){
-			c= d.features[i].properties[plant_type]
-				}
-	}
-	return c
-}
+
+		 c = cap*plant_map[plant_type][plant_size]
+
+		 callback_fn(c)
+
+	 })
+
+ }

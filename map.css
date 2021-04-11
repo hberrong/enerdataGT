@@ -59,7 +59,12 @@ body {
     right: 2%;
     width: 370px;
     height: 350px;
-    z-index: 1;
+    z-index: -1;
+}
+
+#graph-tooltip {
+    position: absolute;
+    z-index: 10;
 }
 
 .line {
@@ -260,14 +265,15 @@ form button.right {
  
 .d3-tip {
   	  line-height: 1;
-  	  font-weight: bold;
+  	  /* font-weight: bold; */
   	  padding: 12px;
   	  background: rgba(108, 122, 137, 1);
   	  color: #fff;
   	  border-radius: 100px;
+      font: 18px Arial, Sans-serif;
 	}
 
-.d3-tip:after {
+#plants:after {
   	  box-sizing: border-box;
   	  display: inline;
   	  font-size: 10px;

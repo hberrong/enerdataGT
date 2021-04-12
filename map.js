@@ -22,11 +22,6 @@ var selected_plant_id = -1;
 var map_bounds;
 var usJson = {};
 var images = {};
-var test
-
-
-
-
 
 // Fields
 var plant_lat_input = d3.select("#plant_lat");
@@ -76,9 +71,13 @@ var oranges = d3.interpolateOranges;
 var solar_color = d3.scaleSequential(oranges);
 
 //Define geothermal color scale
-var geothermal_color = d3.scaleOrdinal()
-.range(['#fff5f0','#fee0d2','#fcbba1','#fc9272',
-'#fb6a4a','#ef3b2c','#cb181d','#a50f15','#67000d']);
+// var geothermal_color = d3.scaleOrdinal()
+// .range(['#fff5f0','#fee0d2','#fcbba1','#fc9272',
+// '#fb6a4a','#ef3b2c','#cb181d','#a50f15','#67000d']);
+var reds = d3.interpolateReds;
+var geothermal_color = d3.scaleSequential(reds);
+
+var map_color_scales = {wind:wind_color, solar:solar_color, geothermal:geothermal_color}
 
 // Define Tool Tip
 var plant_tooltip = d3.tip()
@@ -374,7 +373,6 @@ function load_data(data_to_load) {
 			// set input domain for color scale
 			set_color_domain(d,data_to_load)
 
-
 		g.selectAll("path")
 			.data(d.features)
 			.enter()
@@ -385,7 +383,8 @@ function load_data(data_to_load) {
 				var value = d.properties[data_to_load]
 				if (value) {
 					//If value exists…
-					return get_color_scale(value,data_to_load);
+					color_scale = get_color_scale(data_to_load)
+					return color_scale(value);
 				} else {
 					//If value is undefined…
 					return "#ccc";
@@ -398,20 +397,18 @@ function load_data(data_to_load) {
 			//add graident legend
 			const defs = svg.append("defs");
 
-			//Define grey sequential color scale
-			var greys = d3.interpolateGreys;
-			var wind_color = d3.scaleSequential(greys);
-
   		const linearGradient = defs.append("linearGradient")
       	.attr("id", "linear-gradient");
 
 		  linearGradient.selectAll("stop")
-		    .data(wind_color.ticks().map((t, i, n) => ({ offset: `${100*i/n.length}%`, color: wind_color(t) })))
+				.attr("id","stop_map")
+		    .data(color_scale.ticks().map((t, i, n) => ({ offset: `${100*i/n.length}%`, color: color_scale(t) })))
 		    .enter().append("stop")
 		    .attr("offset", d => d.offset)
 		    .attr("stop-color", d => d.color);
 
 			svg.append("g")
+				.attr("id","gradient_legend")
 				.append("rect")
 				.attr("height",20)
 				.attr("width",100)
@@ -421,12 +418,14 @@ function load_data(data_to_load) {
 				.attr('transform' , 'rotate(270, '+300+',' +100 +') ')
 
 			svg.append("text")
+				.attr("id","gradient_text1")
 				.attr("x",195)
 				.attr("y",40)
 				.text("High")
 				.style("black")
 
 			svg.append("text")
+				.attr("id","gradient_text2")
 				.attr("x",195)
 				.attr("y",170)
 				.text("Low")
@@ -443,33 +442,33 @@ function load_data(data_to_load) {
 }
 
 //function to define the different color scales for each drag_new_source_end
-function get_color_scale(value,data_to_load){
-	if (data_to_load == 'wind'){
-		return wind_color(value)
-	} else if (data_to_load == 'solar') {
-		return solar_color(value)
-	} else if (data_to_load == 'geothermal'){
-		return geothermal_color(value)
-	}
+function get_color_scale(data_to_load){
+	return map_color_scales[data_to_load]
 }
 
 
 function set_color_domain(d,data_to_load){
-	if (data_to_load == "wind"){
-		 wind_d = wind_color.domain([
+	potential_scale = map_color_scales[data_to_load]
+	c_scale = potential_scale.domain([
 		  getMin(d.features,data_to_load),
 			getMax(d.features,data_to_load)])
-		return wind_d
-	} else if (data_to_load == "geothermal"){
-		return geothermal_color.domain([
-			'>15','10-15','5-10','4-5','3-4','2-3','1-2','0.5-1','0.1-0.5','<0.1'
-		]);
-	} else if (data_to_load == "solar"){
-	  solar_d = solar_color.domain([
-	    getMin(d.features,data_to_load),
-	    getMax(d.features,data_to_load)])
-    return solar_d
-  }
+	return c_scale
+
+	// if (data_to_load == "wind"){
+	// 	 wind_d = wind_color.domain([
+	// 	  getMin(d.features,data_to_load),
+	// 		getMax(d.features,data_to_load)])
+	// 	return wind_d
+	// } else if (data_to_load == "geothermal"){
+	// 	return geothermal_color.domain([
+	// 		'>15','10-15','5-10','4-5','3-4','2-3','1-2','0.5-1','0.1-0.5','<0.1'
+	// 	]);
+	// } else if (data_to_load == "solar"){
+	//   solar_d = solar_color.domain([
+	//     getMin(d.features,data_to_load),
+	//     getMax(d.features,data_to_load)])
+  //   return solar_d
+  // }
 }
 
 function remove_data(data_to_remove) {
@@ -477,8 +476,14 @@ function remove_data(data_to_remove) {
 	idx = data_loaded.findIndex(e => e.attr("id") === id);
 	if (idx >= 0) {
 		d3.select("#" + id).remove();
+		// remove gradient legend
+		d3.select("#gradient_legend").remove();
+		d3.select("#gradient_text1").remove();
+		d3.select("#gradient_text2").remove();
+		d3.select("#linear-gradient").remove();
 		data_loaded.splice(idx, 1);
 	}
+
 	// console.log(data_loaded);
 }
 

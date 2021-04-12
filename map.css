@@ -295,3 +295,23 @@ form button.right {
 #dragdrop-item {
     position: absolute;
 }
+
+.new_source_tooltip{
+	position: relative;
+	display: inline-block;
+	}
+
+.new_source_tooltip .tooltiptext{
+	visibility: hidden;
+	width: 80px;
+	background-color: rgba(108, 122, 137, 1);
+	color: #fff;
+	text-align: center;
+	border-radius: 6px;
+	padding: 5px 0;
+	position: absolute;
+	z-index: 1;}
+
+.new_source_tooltip:hover .tooltiptext {
+	visibility: visible;
+	}

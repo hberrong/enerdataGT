@@ -8,7 +8,7 @@ const ZOOM_CONSTRAINTS = [1.5, 100];
 const ZOOM_TRANSITION_SPEED = 750;
 
 const DATA_TO_FILENAME = {
-	"solar":"data/solar_PV.json",
+	"solar":"data/nevada.json",
  	"wind": "data/wind_cleaned.json",
  	"geothermal": "data/geothermal_cleaned.json"
 }
@@ -27,9 +27,11 @@ var images = {};
 var plant_lat_input = d3.select("#plant_lat");
 var plant_lng_input = d3.select("#plant_lng");
 var plant_type_select = d3.select("#plant_type");
+var plant_size_select = d3.select("#plant_size");
 var plant_capacity_input = d3.select("#plant_capacity")
 d3.select("#update_plant").on("click", update_plant_details);
 d3.select("#reset_plant").on("click", reset_plant_details);
+
 
 // Define projection and path required for Choropleth
 var projection = d3.geoAlbersUsa();
@@ -69,9 +71,13 @@ var oranges = d3.interpolateOranges;
 var solar_color = d3.scaleSequential(oranges);
 
 //Define geothermal color scale
-var geothermal_color = d3.scaleOrdinal()
-.range(['#fff5f0','#fee0d2','#fcbba1','#fc9272',
-'#fb6a4a','#ef3b2c','#cb181d','#a50f15','#67000d']);
+// var geothermal_color = d3.scaleOrdinal()
+// .range(['#fff5f0','#fee0d2','#fcbba1','#fc9272',
+// '#fb6a4a','#ef3b2c','#cb181d','#a50f15','#67000d']);
+var reds = d3.interpolateReds;
+var geothermal_color = d3.scaleSequential(reds);
+
+var map_color_scales = {wind:wind_color, solar:solar_color, geothermal:geothermal_color}
 
 // Define Tool Tip
 var plant_tooltip = d3.tip()
@@ -120,7 +126,7 @@ d3.json("united_states.json").then(mapData => createMap(mapData));
 
 // Load other data
 Promise.all([
-	d3.csv("data/powerplants_sanitized.csv", row => {
+	d3.csv("data/powerplants_fixed.csv", row => {
 		var plant_types = row["plant_types_all"].split(",");
 		var plant_caps = row["plant_caps_all"].split(",").map(x => parseFloat(x));
 		// console.log(plant_caps);
@@ -129,10 +135,11 @@ Promise.all([
 			lng: +row["longitude"],
 			lat: +row["latitude"],
 			plant_type: row["plant_type"],
+			plant_size: "small",
 			state: row["state_long"],
 			capacity: +row["total_cap"],
 			// state_short: d["state"],
-			is_renewable: row["renewable"] == "true",
+			is_renewable: row["renewable"] == "TRUE",
 			name: row["plant_name"],
 			sub_plants: {}
 		}
@@ -170,7 +177,6 @@ Promise.all([
   	plants = powerplant_data; // new capacity, will update with addition of new plants
 	d3.select("#powerplants-selector").attr("disabled", null);
 
-	//console.log(demandData);
 	demand = demandData;
 	generation = powerplant_data.filter(f => f); // current capacity, will not change
 
@@ -252,6 +258,40 @@ function createMap(us) {
 }
 
 function reset_zoom(transition_speed=ZOOM_TRANSITION_SPEED) {
+	// remove data
+ var ps = d3.selectAll("#powerplants-selector").property('checked',false)
+ ps.property('checked',false)
+
+ var ss = d3.selectAll("#solar-selector")
+ ss.property('checked',false)
+ remove_data(ss.property('value'))
+
+ var ws = d3.selectAll("#wind-selector")
+ ws.property('checked',false)
+ remove_data(ws.property('value'))
+
+ var gs = d3.selectAll("#geothermal-selector")
+ gs.property('checked',false)
+ remove_data(gs.property('value'))
+
+	//hide selectors when map zoomed out
+	d3.selectAll("#data-selectors")
+	.transition()
+	.duration(transition_speed)
+		.style('display', 'none')
+
+	d3.selectAll("#new-sources")
+	.transition()
+	.duration(transition_speed)
+		.style('display', 'none')
+
+	d3.selectAll("#plant-details")
+	.transition()
+	.duration(transition_speed)
+		.style('display', 'none')
+
+
+
 	const [[x1, y1], [x2, y2]] = map_bounds;
 	states.classed("selected", false);
 	svg.transition()
@@ -259,12 +299,32 @@ function reset_zoom(transition_speed=ZOOM_TRANSITION_SPEED) {
 		.call(map_zoomer.transform, d3.zoomIdentity.translate(SVG_SIZE.WIDTH / 2, SVG_SIZE.HEIGHT / 2).scale(1.5).translate((x1 + x2) / -2, (y1 + y2) / -2));
 }
 
+
 // https://observablehq.com/@d3/zoom-to-bounding-box?collection=@d3/d3-zoom
 function zoom_state(state, idx, ele) {
 	var current_state = d3.select(this);
+	var b = d3.selectAll("#data-selectors")
+
+
+	// show the data_selectors, new_sources, and plant_details now that a state is selected
+	d3.selectAll("#data-selectors")
+	.transition()
+	.delay(ZOOM_TRANSITION_SPEED)
+		.style('display', 'block')
+
+	d3.selectAll("#new-sources")
+	.transition()
+	.delay(ZOOM_TRANSITION_SPEED)
+		.style('display', 'block')
+
+	d3.selectAll("#plant-details")
+	.transition()
+	.delay(ZOOM_TRANSITION_SPEED)
+		.style('display', 'block')
 
 	// Update state_selected, which will be used to update dashboards
 	state_selected = current_state.datum().properties.NAME;
+
 
 	if (current_state.classed("selected")) {
 		reset_zoom();
@@ -280,6 +340,9 @@ function zoom_state(state, idx, ele) {
 				.translate(SVG_SIZE.WIDTH / 2, SVG_SIZE.HEIGHT / 2)		// Place in center of SVG
 				.scale(Math.min(ZOOM_CONSTRAINTS[1], 0.6 / Math.max((x2 - x1) / SVG_SIZE.WIDTH, (y2 - y1) / SVG_SIZE.HEIGHT)))	// Zoom in on state
 				.translate((x1 + x2) / -2, (y1 + y2) / -2));	// Now move zoomed in state to center
+
+
+
 	}
 
 	update_displayed_plants();
@@ -302,7 +365,8 @@ function select_data() {
 function load_data(data_to_load) {
 	svg.classed("loading", true);
 	loader.classed("hidden", false);
-	filename = DATA_TO_FILENAME[data_to_load];
+	//filename = DATA_TO_FILENAME[data_to_load];
+	filename = "data/state_data/" + state_selected + ".json"
 	d3.json(filename).then(d => {
 		var g = map_g.append("g")
 			.attr("id", data_to_load + "-data");
@@ -316,11 +380,12 @@ function load_data(data_to_load) {
 			.append("path")
 			.style("fill", function(d) {
 				//Get data value
-				var value = d.properties.capacity_mw;
-
+				//var value = d.propertiescapacity_mw;
+				var value = d.properties[data_to_load]
 				if (value) {
 					//If value exists…
-					return get_color_scale(value,data_to_load);
+					color_scale = get_color_scale(data_to_load)
+					return color_scale(value);
 				} else {
 					//If value is undefined…
 					return "#ccc";
@@ -328,7 +393,46 @@ function load_data(data_to_load) {
 
 			})
 			.style("stroke", "none")
-			.attr("d", geoGenerator);
+			.attr("d", geoGenerator)
+
+			//add graident legend
+			const defs = svg.append("g").attr("id","gradient-group").append("defs");
+
+  		const linearGradient = defs.append("linearGradient")
+      	.attr("id", "linear-gradient");
+
+		  linearGradient.selectAll("stop")
+				.attr("id","stop_map")
+		    .data(color_scale.ticks().map((t, i, n) => ({ offset: `${100*i/n.length}%`, color: color_scale(t) })))
+		    .enter().append("stop")
+		    .attr("offset", d => d.offset)
+		    .attr("stop-color", d => d.color);
+
+			svg.append("g")
+				.attr("id","gradient_legend")
+				.append("rect")
+				.attr("height",20)
+				.attr("width",100)
+				.attr("x",250)
+				.attr("y",0)
+				.style("fill","url(#linear-gradient)")
+				.attr('transform' , 'rotate(270, '+300+',' +100 +') ')
+
+			svg.append("text")
+				.attr("id","gradient_text1")
+				.attr("x",195)
+				.attr("y",40)
+				.text("High")
+				.style("black")
+
+			svg.append("text")
+				.attr("id","gradient_text2")
+				.attr("x",195)
+				.attr("y",170)
+				.text("Low")
+				.style("black")
+
+
 		data_loaded.push(g);
 	}).catch(e => {
 		console.log(filename + " not found.\n" + e);
@@ -339,34 +443,33 @@ function load_data(data_to_load) {
 }
 
 //function to define the different color scales for each drag_new_source_end
-function get_color_scale(value,data_to_load){
-	if (data_to_load == 'wind'){
-		return wind_color(value)
-	} else if (data_to_load == 'solar') {
-		return solar_color(value)
-	} else if (data_to_load == 'geothermal'){
-		return geothermal_color(value)
-	}
+function get_color_scale(data_to_load){
+	return map_color_scales[data_to_load]
 }
 
 
 function set_color_domain(d,data_to_load){
-	console.log(d);
-	if (data_to_load == "wind"){
-		 wind_d = wind_color.domain([
-		  getMin(d.features,'capacity_mw'),
-			getMax(d.features,'capacity_mw')])
-		return wind_d
-	} else if (data_to_load == "geothermal"){
-		return geothermal_color.domain([
-			'>15','10-15','5-10','4-5','3-4','2-3','1-2','0.5-1','0.1-0.5','<0.1'
-		]);
-	} else if (data_to_load == "solar"){
-	  solar_d = solar_color.domain([
-	    getMin(d.features,'capacity_mw'),
-	    getMax(d.features,'capacity_mw')])
-    return solar_d
-  }
+	potential_scale = map_color_scales[data_to_load]
+	c_scale = potential_scale.domain([
+		  getMin(d.features,data_to_load),
+			getMax(d.features,data_to_load)])
+	return c_scale
+
+	// if (data_to_load == "wind"){
+	// 	 wind_d = wind_color.domain([
+	// 	  getMin(d.features,data_to_load),
+	// 		getMax(d.features,data_to_load)])
+	// 	return wind_d
+	// } else if (data_to_load == "geothermal"){
+	// 	return geothermal_color.domain([
+	// 		'>15','10-15','5-10','4-5','3-4','2-3','1-2','0.5-1','0.1-0.5','<0.1'
+	// 	]);
+	// } else if (data_to_load == "solar"){
+	//   solar_d = solar_color.domain([
+	//     getMin(d.features,data_to_load),
+	//     getMax(d.features,data_to_load)])
+  //   return solar_d
+  // }
 }
 
 function remove_data(data_to_remove) {
@@ -374,8 +477,16 @@ function remove_data(data_to_remove) {
 	idx = data_loaded.findIndex(e => e.attr("id") === id);
 	if (idx >= 0) {
 		d3.select("#" + id).remove();
+		// remove gradient legend
+		d3.select("#gradient_legend").remove();
+		d3.select("#gradient_text1").remove();
+		d3.select("#gradient_text2").remove();
+		d3.select("#linear-gradient").remove();
 		data_loaded.splice(idx, 1);
+
+		svg.select("#gradient-group").remove(); // remove gradient legend
 	}
+
 	// console.log(data_loaded);
 }
 
@@ -410,17 +521,20 @@ function create_new_plant(lat_lng, plant_type) {
 			lng: lat_lng[0],
 			lat: lat_lng[1],
 			plant_type: plant_type,
+			plant_size: 'small',
 			state: get_state_for_lat_lng(lat_lng),
-			capacity: 0,
+			//capacity:0,
 			sub_plants: {},
 			is_renewable: true,				// TODO: Fix this so it's not always true
 			name: `New Plant (#${next_plant_id})`
 		}
 
+		get_capacity(lat_lng, plant_type,new_plant.plant_size, function(c) {
+			new_plant['capacity'] = Math.round(c*10)/10
+		  plant_capacity_input.property("value", new_plant.capacity);})
 		selected_plant_id = next_plant_id;
-
 		plants.push(new_plant);
-		// console.log(new_plant);
+
 
 		update_displayed_plants();
 
@@ -436,24 +550,32 @@ function create_new_plant(lat_lng, plant_type) {
 function set_plant_details_form() {
 	var current_plant = plants.find(p => p.id == selected_plant_id);
 	// console.log(`Looking for id ${selected_plant_id}`);
-	// console.log(current_plant);
 
 	plant_lat_input.property("value", current_plant.lat);
 	plant_lng_input.property("value", current_plant.lng);
 	plant_type_select.property("value", current_plant.plant_type);
-	plant_capacity_input.property("value", current_plant.capacity);
+	plant_size_select.property("value", current_plant.plant_size);
+	//plant_capacity_input.property("value", current_plant.capacity);
 }
 
 function update_plant_details() {
 	d3.event.preventDefault();
 
 	current_plant = plants.find(p => p.id == selected_plant_id);
+
 	// var current_plant = plants[idx];
-	current_plant.lat = parseFloat(plant_lat_input.property("value"));
-	current_plant.lng = parseFloat(plant_lng_input.property("value"));
+	//current_plant.lat = parseFloat(plant_lat_input.property("value"));
+	//current_plant.lng = parseFloat(plant_lng_input.property("value"));
 	current_plant.plant_type = plant_type_select.property("value");
-	current_plant.capacity = parseFloat(plant_capacity_input.property("value")); // MW
-	// console.log(plants);
+	current_plant.plant_size = plant_size_select.property("value");
+	//current_plant.capacity = parseFloat(plant_capacity_input.property("value")*1000);
+
+	get_capacity([current_plant.lng,current_plant.lat],current_plant.plant_type,current_plant.plant_size,function(c) {
+
+		current_plant.capacity = parseFloat(c);
+		plant_capacity_input.property("value", Math.round(c));
+})
+
 	update_displayed_plants();
 	updatePlots(demand, generation, plants, state_selected); // update plot
 }
@@ -531,7 +653,6 @@ function dataPlots(demand, generation, plants, state) {
 		}
 		circle_data.push(circle2);
 	}
-
 	// Get TOTAL energy for current and new capacity
 	if (state_selected != "United States") {
 		filtered_gen = generation.filter(function(d) {return d.state == state; });
@@ -885,3 +1006,22 @@ function updatePlots(demand, generation, plants, state) {
 function get_plants_in_state(state) {
 	return plants.filter(p => (p.state == state) || (state == "United States"))
 }
+
+function get_capacity(lat_lng, plant_type,plant_size,callback_fn) {
+	//set filepath for state corresponding to lat_lng
+		s = get_state_for_lat_lng(lat_lng)
+		fileloc = "data/state_data/"
+		f_name = fileloc.concat(s,".json")
+
+	// map plant types to conversion factors for type and size
+	var plant_map = {'wind':{'small':0.25,'medium':0.5,'large':1},
+	'solar':{'small':1/24000,'medium':100/24000,'large':1000/24000},
+	'geothermal':{'small':1,'medium':3,'large':5}}
+
+   d3.json(f_name).then(data=>{
+		 cap = data.features.find(f => d3.geoContains(f, lat_lng)).properties[plant_type];
+		 c = cap*plant_map[plant_type][plant_size]
+		 callback_fn(c)
+	 })
+
+ }

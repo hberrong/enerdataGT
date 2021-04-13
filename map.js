@@ -47,7 +47,9 @@ const SVG_BOUNDS = svg.node().getBoundingClientRect();
 
 var map_g = svg.append("g").attr("id", "map");
 var states_g = map_g.append("g").attr("id", "states");
+var data_g = map_g.append("g").attr("id", "data-layer");
 var plant_g = map_g.append("g").attr("id", "plants").style("z-index","100");
+
 var data_selectors = d3.selectAll(".data-selector").on("click", select_data);
 var new_source_icons = d3.selectAll(".new-source");
 var state_selected = "United States"
@@ -380,7 +382,7 @@ function load_data(data_to_load) {
 	//filename = DATA_TO_FILENAME[data_to_load];
 	filename = "data/state_data/" + state_selected + ".json"
 	d3.json(filename).then(d => {
-		var g = map_g.append("g")
+		var g = data_g.append("g")
 			.attr("id", data_to_load + "-data")
 			.style("z-index","-1")
 

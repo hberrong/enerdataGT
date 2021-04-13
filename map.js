@@ -530,8 +530,8 @@ function create_new_plant(lat_lng, plant_type) {
 		}
 
 		get_capacity(lat_lng, plant_type,new_plant.plant_size, function(c) {
-			new_plant['capacity'] = Math.round(c*10)/10
-		  plant_capacity_input.property("value", new_plant.capacity);})
+			new_plant['capacity'] = parseFloat(Math.round(c*10)/10);
+		  	plant_capacity_input.property("value", new_plant.capacity);})
 		selected_plant_id = next_plant_id;
 		plants.push(new_plant);
 
@@ -969,7 +969,7 @@ function updatePlots(demand, generation, plants, state) {
 		.attr("y", d => y_scale(d[1]))
 		.attr("height", d => y_scale(d[0]) - y_scale(d[1]))
 		.attr("width", x_scale.bandwidth())
-
+		
 	// select and update demand graph elements
 	svg_line.select(".forecast-line") // update forecast line
 		.data([forecast_data])

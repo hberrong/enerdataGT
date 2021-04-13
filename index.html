@@ -23,7 +23,10 @@
     <!-- append visualization svg to this div-->
     <div class="loader hidden"></div>
     <div id="title">
-      <p class="title">Enerdata</p>
+      <p class="title" style="font-size:35px">Enerdata</p>
+      <p class="title" style="font-size:25px;">Renewable Energy Exploration</p>
+      <br> <br>
+      <p class="title" style="font-size:20px;color:rgb(230, 65, 46)">Click a state to begin</p>
     </div>
 
     <div id="choropleth" class="svg-container"></div>
@@ -33,6 +36,8 @@
       <p class="title">Step 1: Load Data</p>
       <ul class="card-body no-dots">
         <li><input type="checkbox" id="powerplants-selector" value="powerplants" disabled="disabled"><label for="powerplants-selector">Power Plants</label></li>
+        <hr>
+        <p class="card-body" style="font-weight:550;">Power Generation Potential</p>
         <li><input type="checkbox" id="solar-selector" class="data-selector" value="solar"><label for="solar-selector">Solar</label></li>
         <li><input type="checkbox" id="geothermal-selector" class="data-selector" value="geothermal"><label for="geothermal-selector">Geothermal</label></li>
         <li><input type="checkbox" id="wind-selector" class="data-selector" value="wind"><label for="wind-selector">Wind</label></li>
@@ -40,21 +45,21 @@
     </div>
 
     <div id="new-sources" class="card" style="display: none">
-      <p class="title">Step 2: Place New Source</p>
+      <p class="title">Step 2: Drag and Drop New Plant</p>
         <div>
           <img id="wind-source" class="new-source" src="images/wind.svg" alt="Wind" width="24px">
           <img id="solar-source" class="new-source" src="images/solar.svg" alt="Solar" width="24px">
-          <img id="biomass-source" class="new-source" src="images/biomass.svg" alt="Biomass" width="24px">
+          <img id="geothermal-source" class="new-source" src="images/geothermal.svg" alt="Geothermal" width="24px">
+          <!-- <img id="biomass-source" class="new-source" src="images/biomass.svg" alt="Biomass" width="24px">
           <img id="hydro-source" class="new-source" src="images/hydro.svg" alt="Hydro" width="24px">
           <img id="coal-source" class="new-source" src="images/coal.svg" alt="Coal" width="24px">
-          <img id="geothermal-source" class="new-source" src="images/geothermal.svg" alt="Geothermal" width="24px">
           <img id="natural-gas-source" class="new-source" src="images/natural_gas.svg" alt="Natural Gass" width="24px">
           <img id="nuclear-source" class="new-source" src="images/nuclear.svg" alt="Nuclear" width="24px">
           <img id="other-fossil-gasses-source" class="new-source" src="images/other_fossil_gasses.svg" alt="Other Fossil Gasses" width="24px">
           <img id="other-source" class="new-source" src="images/other.svg" alt="Other" width="24px">
           <img id="petroleum-source" class="new-source" src="images/petroleum.svg" alt="Petroleum" width="24px">
           <img id="pumped-storage-source" class="new-source" src="images/pumped_storage.svg" alt="Pumped Storage" width="24px">
-          <img id="wood-source" class="new-source" src="images/wood.svg" alt="Wood" width="24px">
+          <img id="wood-source" class="new-source" src="images/wood.svg" alt="Wood" width="24px"> -->
         </div>
     </div>
 
@@ -92,12 +97,15 @@
         </select>
 
         <label for="plant_capacity">Capacity (MW)</label>
-        <input name="plant_capacity" id="plant_capacity" type="number" readonly style="background-color:rgb(207, 203, 202)" />
+        <input name="plant_capacity" id="plant_capacity" type="number" style="background-color:rgb(207, 203, 202)" />
 
         <button id="update_plant" class="left">Update</button>
+        <button id="delete_plant" class="left">Delete</button>
         <button id="reset_plant" class="right">Reset</button>
       </form>
     </div>
+
+    <div id="percent-renew" class="card" style="text-align:center;"></div>
 
     <div id="data-viz" class="card" style="text-align:center;"></div>
 

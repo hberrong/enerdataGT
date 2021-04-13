@@ -31,7 +31,7 @@ var plant_size_select = d3.select("#plant_size");
 var plant_capacity_input = d3.select("#plant_capacity")
 d3.select("#update_plant").on("click", update_plant_details);
 d3.select("#reset_plant").on("click", reset_plant_details);
-
+d3.select("#delete_plant").on("click", delete_plant);
 
 // Define projection and path required for Choropleth
 var projection = d3.geoAlbersUsa();
@@ -47,7 +47,7 @@ const SVG_BOUNDS = svg.node().getBoundingClientRect();
 
 var map_g = svg.append("g").attr("id", "map");
 var states_g = map_g.append("g").attr("id", "states");
-var plant_g = map_g.append("g").attr("id", "plants");
+var plant_g = map_g.append("g").attr("id", "plants").style("z-index","100");
 var data_selectors = d3.selectAll(".data-selector").on("click", select_data);
 var new_source_icons = d3.selectAll(".new-source");
 var state_selected = "United States"
@@ -290,13 +290,17 @@ function reset_zoom(transition_speed=ZOOM_TRANSITION_SPEED) {
 	.duration(transition_speed)
 		.style('display', 'none')
 
-
+	//display title when zoomed out
+	d3.selectAll("#title")
+		.transition()
+		.duration(transition_speed)
+		.style('display','block')
 
 	const [[x1, y1], [x2, y2]] = map_bounds;
 	states.classed("selected", false);
 	svg.transition()
 		.duration(transition_speed)
-		.call(map_zoomer.transform, d3.zoomIdentity.translate(SVG_SIZE.WIDTH / 2, SVG_SIZE.HEIGHT / 2).scale(1.5).translate((x1 + x2) / -2, (y1 + y2) / -2));
+		.call(map_zoomer.transform, d3.zoomIdentity.translate(SVG_SIZE.WIDTH / 2, SVG_SIZE.HEIGHT / 2).scale(1.1).translate((x1 + x2) / -2, (y1 + y2) / -2));
 }
 
 
@@ -305,6 +309,11 @@ function zoom_state(state, idx, ele) {
 	var current_state = d3.select(this);
 	var b = d3.selectAll("#data-selectors")
 
+	// remove title when zoomed in
+d3.selectAll("#title")
+	.transition()
+	.delay(ZOOM_TRANSITION_SPEED)
+	.style('display','none')
 
 	// show the data_selectors, new_sources, and plant_details now that a state is selected
 	d3.selectAll("#data-selectors")
@@ -372,7 +381,8 @@ function load_data(data_to_load) {
 	filename = "data/state_data/" + state_selected + ".json"
 	d3.json(filename).then(d => {
 		var g = map_g.append("g")
-			.attr("id", data_to_load + "-data");
+			.attr("id", data_to_load + "-data")
+			.style("z-index","-1")
 
 			// set input domain for color scale
 			set_color_domain(d,data_to_load)
@@ -561,6 +571,23 @@ function set_plant_details_form() {
 	//plant_capacity_input.property("value", current_plant.capacity);
 }
 
+function delete_plant() {
+	d3.event.preventDefault();
+
+	var current_plant = plants.find(p => p.id == selected_plant_id);
+
+	var plant_index = plants.indexOf(current_plant)
+	plants.splice(plant_index,1)
+
+	//display powerplants without deleted
+	display_powerplants()
+	updatePlots(demand, generation, plants, state_selected);
+
+
+
+
+}
+
 function update_plant_details() {
 	d3.event.preventDefault();
 
@@ -620,9 +647,9 @@ function get_state_for_lat_lng(lat_lng) {
 }
 
 // Define margins/size for data viz and append svg
-var line_margin = {top: 40, bottom: 60, right: 35, left: 55},
-w_line = 250,
-h_line = 250;
+var line_margin = {top: 50, bottom: 60, right: 35, left: 55},
+w_line = 170,
+h_line = 160;
 
 var svg_line = d3.select("div#data-viz").append("svg")
 	.attr("id", "graph")
@@ -717,6 +744,19 @@ function dataPlots(demand, generation, plants, state) {
 	new_sum_nonrenewable = new_total_nonrenewable.reduce(function(a,b) {return a+b;},0)
 	// new_sum_nonrenewable = new_sum_nonrenewable*365*24 // conversion to MWh
 
+	var percent_renewable = Math.round(new_sum_renewable/(new_sum_renewable+new_sum_nonrenewable)*100*10)/10
+
+	var svg_percent = d3.selectAll("#percent-renew").append("svg")
+		.attr("class", "label")
+		.append("text")
+		.attr("x",150)
+		.attr("y", 20)
+		.style("text-anchor", "middle")
+		.style("font-size", "15px")
+		.style("font-weight", "700")
+		.text(percent_renewable + " % Renewables");
+
+
 	// create array for both energy and demand data - note: all data is originally in MWh
 	const graph_data = [{
 		label: "Current Capacity",
@@ -802,7 +842,7 @@ function createPlots(demand, generation, plants, state) {
 		.on("mousemove", function(d) {
 			viz_tooltip.show;
 			viz_tooltip.style('top', d3.event.y - 50 + 'px');
-			viz_tooltip.style('left', d3.event.x - 170 + 'px'); 
+			viz_tooltip.style('left', d3.event.x - 170 + 'px');
 		})
 		.on("mouseout", viz_tooltip.hide)
 
@@ -823,14 +863,14 @@ function createPlots(demand, generation, plants, state) {
 			.y(function(d) { return y_scale(d.total); })
 			.curve(d3.curveMonotoneX))
 		.attr("fill", "none");
-	
+
 	// append and label circles for demand line, 10 year interval
 	var circle = svg_line.selectAll(".circles")
 		.data(circle_data)
 		.enter();
 	circle.append("circle")
 		.attr("class", "circles")
-		.attr("r", 13)
+		.attr("r", 9)
 		.attr("fill", "white")
 		.attr("cx", function(d) { return x_dem_scale(d.year); })
 		.attr("cy", function(d) { return y_scale(d.total); });
@@ -841,7 +881,7 @@ function createPlots(demand, generation, plants, state) {
 		.text(function(d) { return d.year.getFullYear() }) // "2010" year format
 		.style("fill", 'black')
 		.style("text-anchor", "middle")
-		.style("font-size", "11px")
+		.style("font-size", "7px")
 		.style("font-weight", "700");
 
 	//----------------------------AXES---------------------------//
@@ -863,15 +903,26 @@ function createPlots(demand, generation, plants, state) {
 		.attr("transform", "rotate(-90)")
 		.attr("x", -h_line/2)
 		.attr("y", -line_margin.left/1.4)
-		.text("Energy (1000s of MW)");
-	svg_line.append("text")    
+		.text("Energy (1000s of MW)")
+		.style("text-align","center");
+	svg_line.append("text")
+		.attr("class", "chart_title")
+		.attr("id","chart_title2")
+		.attr("x", (w_line)/2.15)
+		.attr("y", -line_margin.top/1.5)
+		.style("text-anchor", "middle")
+		.text("Energy Demand and Capacity")
+		.style("font-size", "15px")
+		.style("text-align","center");
+	svg_line.append("text")
 		.attr("class", "chart_title")
 		.attr("id","chart_title")
 		.attr("x", (w_line)/2.15)
-		.attr("y", -line_margin.top/2.3)
+		.attr("y", -line_margin.top/3.5)
 		.style("text-anchor", "middle")
-		.text("Energy Demand and Capacity for " + state)
-		.style("font-size", "15px");
+		.text("for the " + state)
+		.style("font-size", "15px")
+		.style("text-align","center");
 
 	//----------------------------LEGEND---------------------------//
 	var legend_bar = svg_line.append("g") // legend for bar graph elements
@@ -881,47 +932,49 @@ function createPlots(demand, generation, plants, state) {
 		.enter();
 	legend_bar.append("g")
 		.append("rect")
-		.attr("x", function(d, i) { return line_margin.right*2.1 - i*110; })
-		.attr("y", h_line + line_margin.bottom/2)
-		.attr("width", 15)
-		.attr("height", 15)
+		.attr("x", function(d, i) { return line_margin.right*1.2 - i*90; })
+		.attr("y", h_line + line_margin.bottom/2.8)
+		.attr("width", 12)
+		.attr("height", 12)
 		.attr("fill", colors);
 	legend_bar.append("g")
 		.append("text")
 		.attr("class", "label")
 		.attr("text-anchor", "left")
-		.attr("x", function(d, i) { return line_margin.right*2.1 - i*110 + 17; })
-		.attr("y", h_line + line_margin.bottom/1.5 +2)
-		.text(function(d) { return d; });	
+		.attr("x", function(d, i) { return line_margin.right*1.15 - i*90 + 17; })
+		.attr("y", h_line + line_margin.bottom/2 +2)
+		.text(function(d) { return d; })
+		.style("font-size","10px");
 	svg_line.append("line") // legend for line graph
 		.attr("class", "line")
 		.attr("id","legend_line")
-		.attr("x1", w_line/1.8 + 30)
-		.attr("y1", h_line + line_margin.bottom/1.5 - 3)
-		.attr("x2",  w_line/1.8 + 70)
-		.attr("y2",  h_line + line_margin.bottom/1.5 - 3)
+		.attr("x1", w_line/1.8 + 20)
+		.attr("y1", h_line + line_margin.bottom/1.9 - 3)
+		.attr("x2",  w_line/1.8 + 50)
+		.attr("y2",  h_line + line_margin.bottom/1.9 - 3)
 		.attr("stroke", "white")
 	svg_line.append("circle")
 		.attr("id","legend_circle")
-		.attr("r", 13)
+		.attr("r",8.5)
 		.attr("fill", "white")
-		.attr("cx", w_line/1.8 + 50)
-		.attr("cy", h_line + line_margin.bottom/1.5 - 3.5);
+		.attr("cx", w_line/1.8 + 35)
+		.attr("cy", h_line + line_margin.bottom/1.9 - 3.5);
 	svg_line.append("text")
 		.attr("id","legend_year")
 		.attr("class", "label")
-		.attr("x", w_line/1.8 + 50)
-		.attr("y", h_line + line_margin.bottom/1.5)
+		.attr("x", w_line/1.8 + 35)
+		.attr("y", h_line + line_margin.bottom/1.95)
 		.style("text-anchor", "middle")
-		.style("font-size", "11px")
+		.style("font-size", "7px")
 		.style("font-weight", "700")
 		.text("Year");
 	svg_line.append("text")
 		.attr("id","legend_demand")
 		.attr("class", "label")
-		.attr("x", w_line - 35)
-		.attr("y",  h_line + line_margin.bottom/1.5 + 2)
+		.attr("x", w_line - 20)
+		.attr("y",  h_line + line_margin.bottom/2 + 2)
 		.style("text-anchor", "left")
+		.style("font-size","10px")
 		.text("Demand");
 }
 
@@ -957,7 +1010,7 @@ function updatePlots(demand, generation, plants, state) {
 				return d.label;}))
 				.range([0, w_line])
 			.padding(0.1);
-	
+
 	//----------------------------UPDATE GRAPH---------------------------//
 	// select and update bar graph
 	var stacked = d3.stack().keys(keys)(graph_data)
@@ -1000,10 +1053,15 @@ function updatePlots(demand, generation, plants, state) {
 
 	// select and update chart title
 
-	svg_line.select(".chart_title") // select by id
+	// svg_line.select(".chart_title2") // select by id
+	// 	.transition(animate)
+	// 	.text("Energy Demand and Capacity")
+	// 	.style("font-size", "15px");
+	svg_line.select("#chart_title") // select by id
 		.transition(animate)
-		.text("Energy Demand and Capacity for " + state)
+		.text("for " + state)
 		.style("font-size", "15px");
+
 }
 
 function get_plants_in_state(state) {

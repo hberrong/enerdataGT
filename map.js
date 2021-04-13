@@ -362,6 +362,9 @@ function select_data() {
 	}
 }
 
+//add graident legend
+defs = svg.append("g").attr("id","gradient-group").append("defs");
+
 function load_data(data_to_load) {
 	svg.classed("loading", true);
 	loader.classed("hidden", false);
@@ -395,9 +398,7 @@ function load_data(data_to_load) {
 			.style("stroke", "none")
 			.attr("d", geoGenerator)
 
-			//add graident legend
-			const defs = svg.append("g").attr("id","gradient-group").append("defs");
-
+		svg.select("#gradient-group").attr('display', 'block');
   		const linearGradient = defs.append("linearGradient")
       	.attr("id", "linear-gradient");
 
@@ -408,8 +409,8 @@ function load_data(data_to_load) {
 		    .attr("offset", d => d.offset)
 		    .attr("stop-color", d => d.color);
 
-			svg.append("g")
-				.attr("id","gradient_legend")
+			svg.select("#gradient-group").append("g")
+				.attr("id","gradient-group-"+data_to_load)
 				.append("rect")
 				.attr("height",20)
 				.attr("width",100)
@@ -418,22 +419,24 @@ function load_data(data_to_load) {
 				.style("fill","url(#linear-gradient)")
 				.attr('transform' , 'rotate(270, '+300+',' +100 +') ')
 
-			svg.append("text")
-				.attr("id","gradient_text1")
-				.attr("x",195)
+			svg.select("#gradient-group-"+data_to_load)
+				.append("text")
+				.attr("class", "label")
+				.attr("x",198)
 				.attr("y",40)
 				.text("High")
 				.style("black")
 
-			svg.append("text")
-				.attr("id","gradient_text2")
-				.attr("x",195)
+			svg.select("#gradient-group-"+data_to_load)
+				.append("text")
+				.attr("class", "label")
+				.attr("x",198)
 				.attr("y",170)
 				.text("Low")
 				.style("black")
 
-
 		data_loaded.push(g);
+
 	}).catch(e => {
 		console.log(filename + " not found.\n" + e);
 	}).finally(() => {
@@ -484,7 +487,7 @@ function remove_data(data_to_remove) {
 		d3.select("#linear-gradient").remove();
 		data_loaded.splice(idx, 1);
 
-		svg.select("#gradient-group").remove(); // remove gradient legend
+		svg.select("#gradient-group-"+data_to_remove).remove(); // remove gradient legend
 	}
 
 	// console.log(data_loaded);
@@ -969,7 +972,7 @@ function updatePlots(demand, generation, plants, state) {
 		.attr("y", d => y_scale(d[1]))
 		.attr("height", d => y_scale(d[0]) - y_scale(d[1]))
 		.attr("width", x_scale.bandwidth())
-		
+
 	// select and update demand graph elements
 	svg_line.select(".forecast-line") // update forecast line
 		.data([forecast_data])

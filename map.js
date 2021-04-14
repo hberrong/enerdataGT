@@ -749,7 +749,7 @@ function dataPlots(demand, generation, plants, state) {
 	var svg_percent = d3.selectAll("#percent-renew").append("svg")
 		.attr("class", "label")
 		.append("text")
-		.attr("x",150)
+		.attr("x",130)
 		.attr("y", 20)
 		.style("text-anchor", "middle")
 		.style("font-size", "15px")

@@ -41,6 +41,7 @@
         <li><input type="radio" id="solar-selector" name="generator_potential" class="data-selector" value="solar"><label for="solar-selector">Solar</label></li>
         <li><input type="radio" id="geothermal-selector" name="generator_potential" class="data-selector" value="geothermal"><label for="geothermal-selector">Geothermal</label></li>
         <li><input type="radio" id="wind-selector" name="generator_potential" class="data-selector" value="wind"><label for="wind-selector">Wind</label></li>
+        <li><input type="radio" id="none-selector" name="generator_potential" class="data-selector" value="none"><label for="none-selector">None</label></li>
       </ul>
     </div>
 
@@ -97,15 +98,15 @@
         </select>
 
         <label for="plant_capacity">Capacity (MW)</label>
-        <input name="plant_capacity" id="plant_capacity" type="number" style="background-color:rgb(207, 203, 202)" />
+        <input name="plant_capacity" id="plant_capacity" type="number" readonly style="background:rgb(200,200,200)" />
 
-        <button id="update_plant" class="left">Update</button>
-        <button id="delete_plant" class="left">Delete</button>
-        <button id="reset_plant" class="right">Reset</button>
+        <button id="update_plant" class="left" >Update</button>
+        <button id="delete_plant" class="center" >Delete</button>
+        <button id="reset_plant" class="right" >Reset</button>
       </form>
     </div>
 
-    <div id="percent-renew" class="card" style="text-align:center;"></div>
+    <!-- <div id="percent-renew" class="card" style="text-align:center;"></div> -->
 
     <div id="data-viz" class="card" style="text-align:center;"></div>
 

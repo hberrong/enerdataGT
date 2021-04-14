@@ -259,21 +259,11 @@ function createMap(us) {
 }
 
 function reset_zoom(transition_speed=ZOOM_TRANSITION_SPEED) {
-	// remove data
- var ps = d3.selectAll("#powerplants-selector").property('checked',false)
- ps.property('checked',false)
+	remove_all_data()
 
- var ss = d3.selectAll("#solar-selector")
- ss.property('checked',false)
- remove_data(ss.property('value'))
-
- var ws = d3.selectAll("#wind-selector")
- ws.property('checked',false)
- remove_data(ws.property('value'))
-
- var gs = d3.selectAll("#geothermal-selector")
- gs.property('checked',false)
- remove_data(gs.property('value'))
+	//check the none checkbox
+	var check_none = d3.selectAll("#none-selector")
+  check_none.property('checked','true')
 
 	//hide selectors when map zoomed out
 	d3.selectAll("#data-selectors")
@@ -332,6 +322,8 @@ d3.selectAll("#title")
 	.delay(ZOOM_TRANSITION_SPEED)
 		.style('display', 'block')
 
+
+
 	// Update state_selected, which will be used to update dashboards
 	state_selected = current_state.datum().properties.NAME;
 
@@ -365,23 +357,34 @@ function zoom_map(datum, idx, ele) {
 }
 
 function select_data() {
-	if (this.checked) {				// True if user checked it. False if user cleared check.
+	var display_data = ['solar','wind','geothermal']
+	if (display_data.includes(this.value)) {				// True if user checked it. False if user cleared check.
 		load_data(this.value);		// The checkmark clicked
 	} else {
-		remove_data(this.value);
+		remove_all_data()
 	}
 }
 
-//add graident legend
-defs = svg.append("g").attr("id","gradient-group").append("defs");
+function remove_all_data(){
+		d3.select('#solar-data').remove();
+		d3.select('#wind-data').remove();
+		d3.select('#geothermal-data').remove();
+		d3.select("#gradient-group").remove();
+
+}
+
+
 
 function load_data(data_to_load) {
-	current_loaded = data_g.select("g");
-	if (current_loaded.size() > 0) {
-		id = current_loaded.attr("id");
-		if (id.includes(data_to_load)) return;
-		remove_data(id);
-	}
+	remove_all_data()
+	// current_loaded = data_g.select("g");
+	// console.log(current_loaded)
+	// if (current_loaded.size() > 0) {
+	// 	id = current_loaded.attr("id");
+	// 	console.log(id)
+	// 	if (id.includes(data_to_load)) return;
+	// 	remove_data(id);
+	// }
 	svg.classed("loading", true);
 	loader.classed("hidden", false);
 	//filename = DATA_TO_FILENAME[data_to_load];
@@ -415,6 +418,10 @@ function load_data(data_to_load) {
 			.style("stroke", "none")
 			.attr("d", geoGenerator)
 
+
+		//add graident legend
+		console.log(data_to_load)
+		defs = svg.append("g").attr("id","gradient-group").append("defs");
 		svg.select("#gradient-group").attr('display', 'block');
   		const linearGradient = defs.append("linearGradient")
       	.attr("id", "linear-gradient");
@@ -427,30 +434,32 @@ function load_data(data_to_load) {
 		    .attr("stop-color", d => d.color);
 
 			svg.select("#gradient-group").append("g")
-				.attr("id","gradient-group-"+data_to_load)
+				.attr("id","gradient-group")
 				.append("rect")
 				.attr("height",20)
 				.attr("width",100)
-				.attr("x",250)
-				.attr("y",0)
+				.attr("x",230)
+				.attr("y",100)
 				.style("fill","url(#linear-gradient)")
 				.attr('transform' , 'rotate(270, '+300+',' +100 +') ')
 
-			svg.select("#gradient-group-"+data_to_load)
+			svg.select("#gradient-group")
 				.append("text")
 				.attr("class", "label")
-				.attr("x",198)
-				.attr("y",40)
+				.attr("x",298)
+				.attr("y",60)
 				.text("High")
-				.style("black")
+				.style("color","black")
+				.style("font-weight","bold")
 
-			svg.select("#gradient-group-"+data_to_load)
+			svg.select("#gradient-group")
 				.append("text")
 				.attr("class", "label")
-				.attr("x",198)
-				.attr("y",170)
+				.attr("x",298)
+				.attr("y",190)
 				.text("Low")
-				.style("black")
+				.style("color","black")
+				.style("font-weight","bold")
 
 	}).catch(e => {
 		console.log(filename + " not found.\n" + e);
@@ -493,7 +502,7 @@ function set_color_domain(d,data_to_load){
 function remove_data(data_to_remove) {
 	var type = data_to_remove.substr(0, data_to_remove.length - 5);
 
-	d3.select("#" + data_to_remove).remove();
+	d3.select("#" + data_to_remove + "-data").remove();
 
 	// remove gradient legend
 	d3.select("#gradient_legend").remove();
@@ -565,11 +574,11 @@ function set_plant_details_form() {
 	var current_plant = plants.find(p => p.id == selected_plant_id);
 	// console.log(`Looking for id ${selected_plant_id}`);
 
-	plant_lat_input.property("value", current_plant.lat);
-	plant_lng_input.property("value", current_plant.lng);
+	//plant_lat_input.property("value", current_plant.lat);
+	//plant_lng_input.property("value", current_plant.lng);
 	plant_type_select.property("value", current_plant.plant_type);
 	plant_size_select.property("value", current_plant.plant_size);
-	//plant_capacity_input.property("value", current_plant.capacity);
+	plant_capacity_input.property("value", current_plant.capacity);
 }
 
 function delete_plant() {
@@ -579,6 +588,8 @@ function delete_plant() {
 
 	var plant_index = plants.indexOf(current_plant)
 	plants.splice(plant_index,1)
+
+	plant_capacity_input.property("value",0)
 
 	//display powerplants without deleted
 	display_powerplants()
@@ -745,17 +756,17 @@ function dataPlots(demand, generation, plants, state) {
 	new_sum_nonrenewable = new_total_nonrenewable.reduce(function(a,b) {return a+b;},0)
 	// new_sum_nonrenewable = new_sum_nonrenewable*365*24 // conversion to MWh
 
-	var percent_renewable = Math.round(new_sum_renewable/(new_sum_renewable+new_sum_nonrenewable)*100*10)/10
-
-	var svg_percent = d3.selectAll("#percent-renew").append("svg")
-		.attr("class", "label")
-		.append("text")
-		.attr("x",130)
-		.attr("y", 20)
-		.style("text-anchor", "middle")
-		.style("font-size", "15px")
-		.style("font-weight", "700")
-		.text(percent_renewable + " % Renewables");
+	// var percent_renewable = Math.round(new_sum_renewable/(new_sum_renewable+new_sum_nonrenewable)*100*10)/10
+	//
+	// var svg_percent = d3.selectAll("#percent-renew").append("svg")
+	// 	.attr("class", "label")
+	// 	.append("text")
+	// 	.attr("x",130)
+	// 	.attr("y", 20)
+	// 	.style("text-anchor", "middle")
+	// 	.style("font-size", "15px")
+	// 	.style("font-weight", "700")
+	// 	.text(percent_renewable + " % Renewables");
 
 
 	// create array for both energy and demand data - note: all data is originally in MWh

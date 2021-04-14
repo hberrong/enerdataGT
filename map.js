@@ -257,8 +257,7 @@ function reset_zoom(transition_speed=ZOOM_TRANSITION_SPEED) {
 	remove_all_data()
 
 	//uncheck check powerplants to auto load_data
-	d3.selectAll("#powerplants-selector")
-		.property('checked',false)
+	hide_powerplants()
 
 	//check the none checkbox
 	var check_none = d3.selectAll("#none-selector")
@@ -285,12 +284,6 @@ function reset_zoom(transition_speed=ZOOM_TRANSITION_SPEED) {
 		.transition()
 		.duration(transition_speed)
 		.style('display','block')
-
-	d3.selectAll("#instruct-1")
-		.style('display', 'block')
-
-		d3.selectAll("#instruct-2")
-		.style('display', 'none')
 
 	const [[x1, y1], [x2, y2]] = map_bounds;
 	states.classed("selected", false);

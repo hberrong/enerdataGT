@@ -14,7 +14,6 @@ const DATA_TO_FILENAME = {
 }
 
 // Variables
-var data_loaded = [];
 var plants = [];
 var demand = [];
 var next_plant_id = 0;
@@ -47,7 +46,9 @@ const SVG_BOUNDS = svg.node().getBoundingClientRect();
 
 var map_g = svg.append("g").attr("id", "map");
 var states_g = map_g.append("g").attr("id", "states");
+var data_g = map_g.append("g").attr("id", "data-layer");
 var plant_g = map_g.append("g").attr("id", "plants").style("z-index","100");
+
 var data_selectors = d3.selectAll(".data-selector").on("click", select_data);
 var new_source_icons = d3.selectAll(".new-source");
 var state_selected = "United States"
@@ -375,12 +376,18 @@ function select_data() {
 defs = svg.append("g").attr("id","gradient-group").append("defs");
 
 function load_data(data_to_load) {
+	current_loaded = data_g.select("g");
+	if (current_loaded.size() > 0) {
+		id = current_loaded.attr("id");
+		if (id.includes(data_to_load)) return;
+		remove_data(id);
+	}
 	svg.classed("loading", true);
 	loader.classed("hidden", false);
 	//filename = DATA_TO_FILENAME[data_to_load];
 	filename = "data/state_data/" + state_selected + ".json"
 	d3.json(filename).then(d => {
-		var g = map_g.append("g")
+		var g = data_g.append("g")
 			.attr("id", data_to_load + "-data")
 			.style("z-index","-1")
 
@@ -445,8 +452,6 @@ function load_data(data_to_load) {
 				.text("Low")
 				.style("black")
 
-		data_loaded.push(g);
-
 	}).catch(e => {
 		console.log(filename + " not found.\n" + e);
 	}).finally(() => {
@@ -486,21 +491,17 @@ function set_color_domain(d,data_to_load){
 }
 
 function remove_data(data_to_remove) {
-	var id = data_to_remove + "-data";
-	idx = data_loaded.findIndex(e => e.attr("id") === id);
-	if (idx >= 0) {
-		d3.select("#" + id).remove();
-		// remove gradient legend
-		d3.select("#gradient_legend").remove();
-		d3.select("#gradient_text1").remove();
-		d3.select("#gradient_text2").remove();
-		d3.select("#linear-gradient").remove();
-		data_loaded.splice(idx, 1);
+	var type = data_to_remove.substr(0, data_to_remove.length - 5);
 
-		svg.select("#gradient-group-"+data_to_remove).remove(); // remove gradient legend
-	}
+	d3.select("#" + data_to_remove).remove();
 
-	// console.log(data_loaded);
+	// remove gradient legend
+	d3.select("#gradient_legend").remove();
+	d3.select("#gradient_text1").remove();
+	d3.select("#gradient_text2").remove();
+	d3.select("#linear-gradient").remove();
+
+	svg.select("#gradient-group-"+type).remove(); // remove gradient legend
 }
 
 function drag_new_source_start(datum, idx, ele) {

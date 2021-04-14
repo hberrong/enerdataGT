@@ -286,8 +286,11 @@ function reset_zoom(transition_speed=ZOOM_TRANSITION_SPEED) {
 		.duration(transition_speed)
 		.style('display','block')
 
-	d3.selectAll("#instructions")
+	d3.selectAll("#instruct-1")
 		.style('display', 'block')
+
+		d3.selectAll("#instruct-2")
+		.style('display', 'none')
 
 	const [[x1, y1], [x2, y2]] = map_bounds;
 	states.classed("selected", false);
@@ -309,8 +312,11 @@ d3.selectAll("#title")
 	.style('display','none')
 
 
-		d3.selectAll("#instructions")
+		d3.selectAll("#instruct-1")
 			.style('display', 'none')
+
+		d3.selectAll("#instruct-2")
+		.style('display', 'block')
 
 	// show the data_selectors, new_sources, and plant_details now that a state is selected
 	d3.selectAll("#data-selectors")
@@ -846,7 +852,7 @@ function createPlots(demand, generation, plants, state) {
 		.style('opacity', 0.3)
 		.style('font-size', '14px')
 		.html(function(d) {
-			return d.key +" Energy<br><strong>" + Math.round( (d[1]-d[0]) / d.data.total * 100) + "%</strong> of Total Capacity";
+			return d.key +" Energy<br><strong>" + ((d[1]-d[0]) / d.data.total * 100).toFixed(1) + "%</strong> of Total Capacity";
 				//+ Math.round(d[1]-d[0]) + " thousands of MW<br>";;
 		});
 
@@ -901,7 +907,7 @@ function createPlots(demand, generation, plants, state) {
 		.text(function(d) { return d.year.getFullYear() }) // "2010" year format
 		.style("fill", 'black')
 		.style("text-anchor", "middle")
-		.style("font-size", "7px")
+		.style("font-size", "10px")
 		.style("font-weight", "700");
 
 	//----------------------------AXES---------------------------//
@@ -922,7 +928,7 @@ function createPlots(demand, generation, plants, state) {
 		.attr("text-anchor", "middle")
 		.attr("transform", "rotate(-90)")
 		.attr("x", -h_line/2)
-		.attr("y", -line_margin.left/1.4)
+		.attr("y", -line_margin.left/1.6)
 		.text("Energy (1000s of MW)")
 		.style("text-align","center");
 	svg_line.append("text")
@@ -985,7 +991,7 @@ function createPlots(demand, generation, plants, state) {
 		.attr("x", w_line/1.8 + 35)
 		.attr("y", h_line + line_margin.bottom/1.95)
 		.style("text-anchor", "middle")
-		.style("font-size", "7px")
+		.style("font-size", "10px")
 		.style("font-weight", "700")
 		.text("Year");
 	svg_line.append("text")

@@ -23,23 +23,23 @@
     <!-- append visualization svg to this div-->
     <div class="loader hidden"></div>
     <div id="title">
-      <p class="title" style="font-size:35px">Enerdata</p>
-      <p class="title" style="font-size:25px;">Renewable Energy Exploration</p>
+      <p class="title label" style="font-size:35px">Enerdata</p>
+      <p class="title label" style="font-size:25px;">Renewable Energy Exploration</p>
       <br> <br>
-      <p class="title" style="font-size:20px;color:rgb(230, 65, 46)">Click a state to begin</p>
+      <p class="title label" style="font-size:20px;color:rgb(230, 65, 46)">Click a state to begin</p>
     </div>
 
     <div id="instructions" class="card">
       <p class="title">Instructions</p>
-      <p class="body" style="font-size:13px;">Welcome to Enerdata, an interactive tool for exploring the potential of renewable energy.<br><br>
+      <p class="body label" style="font-size:13px;">Welcome to Enerdata, an interactive tool for exploring the potential of renewable energy.<br><br>
       Clicking on a state will display a new view showing the current powerplants by type. <br><br>
-      Selecting a renewable energy source (solar, wind or geothermal) will display the potential power generation for this source.<br><br>
-      Drag and drop a new renewable energy powerplant onto the map.  The size of the powerplant can be customized,
-      and any powerplant on the map can be changed to a different type.<br><br>
-      The graph in the bottom left displays the current capacity and the capacity after adding or changing a powerplant
+      1) Selecting a renewable energy source (solar, wind or geothermal) will display the potential power generation for this source.<br><br>
+      2) Drag and drop a new renewable energy powerplant onto the map.<br><br>
+      3) The size of the powerplant can be customized, and any powerplant on the map can be changed to a different type.<br><br>
+      The graph in the bottom right displays the current capacity and the capacity after adding or changing a powerplant
       as well as the predicted energy demand.
       <br><br>
-      Add, change, and remove powerplants to explore the possiblity of a renewable energy future.
+      <strong>Add, change, and remove powerplants to explore the possiblity of a renewable energy future.</strong>
       </p>
     </div>
 
@@ -52,7 +52,7 @@
       <ul class="card-body no-dots">
         <li><input type="checkbox" id="powerplants-selector" value="powerplants" disabled="disabled"><label for="powerplants-selector">Power Plants</label></li>
         <hr>
-        <p class="card-body" style="font-weight:550;">Power Generation Potential</p>
+        <p class="card-body" style="font-weight:700;">Power Generation Potential</p>
         <li><input type="radio" id="solar-selector" name="generator_potential" class="data-selector" value="solar"><label for="solar-selector">Solar</label></li>
         <li><input type="radio" id="geothermal-selector" name="generator_potential" class="data-selector" value="geothermal"><label for="geothermal-selector">Geothermal</label></li>
         <li><input type="radio" id="wind-selector" name="generator_potential" class="data-selector" value="wind"><label for="wind-selector">Wind</label></li>

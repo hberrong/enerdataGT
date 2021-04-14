@@ -184,6 +184,19 @@ path.selected {
     z-index: -1;
 }
 
+/*Instructions Card */
+#instructions {
+    top: 10px;
+    left: 2%;
+    width: 240px;
+    padding: 0 5px 0;
+}
+
+.card-body {
+    margin: 0;
+}
+
+
 /* Data Selectors Card */
 #data-selectors {
     top: 10px;

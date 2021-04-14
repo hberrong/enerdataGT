@@ -29,8 +29,23 @@
       <p class="title" style="font-size:20px;color:rgb(230, 65, 46)">Click a state to begin</p>
     </div>
 
+    <div id="instructions" class="card">
+      <p class="title">Instructions</p>
+      <p class="body" style="font-size:13px;">Welcome to Enerdata, an interactive tool for exploring the potential of renewable energy.<br><br>
+      Clicking on a state will display a new view showing the current powerplants by type. <br><br>
+      Selecting a renewable energy source (solar, wind or geothermal) will display the potential power generation for this source.<br><br>
+      Drag and drop a new renewable energy powerplant onto the map.  The size of the powerplant can be customized,
+      and any powerplant on the map can be changed to a different type.<br><br>
+      The graph in the bottom left displays the current capacity and the capacity after adding or changing a powerplant
+      as well as the predicted energy demand.
+      <br><br>
+      Add, change, and remove powerplants to explore the possiblity of a renewable energy future.
+      </p>
+    </div>
+
     <div id="choropleth" class="svg-container"></div>
     <div id="map_overlay"></div>
+
 
     <div id="data-selectors" class="card" style="display: none">
       <p class="title">Step 1: Load Data</p>
@@ -109,6 +124,8 @@
     <!-- <div id="percent-renew" class="card" style="text-align:center;"></div> -->
 
     <div id="data-viz" class="card" style="text-align:center;"></div>
+
+
 
   <script type="text/javascript" src="map.js"></script>
 </body>

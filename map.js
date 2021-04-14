@@ -261,6 +261,10 @@ function createMap(us) {
 function reset_zoom(transition_speed=ZOOM_TRANSITION_SPEED) {
 	remove_all_data()
 
+	//uncheck check powerplants to auto load_data
+	d3.selectAll("#powerplants-selector")
+		.property('checked',false)
+
 	//check the none checkbox
 	var check_none = d3.selectAll("#none-selector")
   check_none.property('checked','true')
@@ -281,11 +285,14 @@ function reset_zoom(transition_speed=ZOOM_TRANSITION_SPEED) {
 	.duration(transition_speed)
 		.style('display', 'none')
 
-	//display title when zoomed out
+	//display title and instructions when zoomed out
 	d3.selectAll("#title")
 		.transition()
 		.duration(transition_speed)
 		.style('display','block')
+
+	d3.selectAll("#instructions")
+		.style('display', 'block')
 
 	const [[x1, y1], [x2, y2]] = map_bounds;
 	states.classed("selected", false);
@@ -300,11 +307,15 @@ function zoom_state(state, idx, ele) {
 	var current_state = d3.select(this);
 	var b = d3.selectAll("#data-selectors")
 
-	// remove title when zoomed in
+	// remove title and instructions when zoomed in
 d3.selectAll("#title")
 	.transition()
 	.delay(ZOOM_TRANSITION_SPEED)
 	.style('display','none')
+
+
+		d3.selectAll("#instructions")
+			.style('display', 'none')
 
 	// show the data_selectors, new_sources, and plant_details now that a state is selected
 	d3.selectAll("#data-selectors")
@@ -343,7 +354,9 @@ d3.selectAll("#title")
 				.scale(Math.min(ZOOM_CONSTRAINTS[1], 0.6 / Math.max((x2 - x1) / SVG_SIZE.WIDTH, (y2 - y1) / SVG_SIZE.HEIGHT)))	// Zoom in on state
 				.translate((x1 + x2) / -2, (y1 + y2) / -2));	// Now move zoomed in state to center
 
-
+			//check powerplants to auto load_data
+			d3.selectAll("#powerplants-selector")
+				.property('checked',true)
 
 	}
 
@@ -1096,5 +1109,13 @@ function get_capacity(lat_lng, plant_type,plant_size,callback_fn) {
 		 c = cap*plant_map[plant_type][plant_size]
 		 callback_fn(c)
 	 })
+
+	 //----------------------------Help Tooltips---------------------------//
+	 step_1 = svg.append("circle")
+ 		.attr("class", "circles")
+ 		.attr("r", 15)
+ 		.attr("fill", "white")
+ 		.attr("cx", 50)
+ 		.attr("cy", 0);
 
  }

@@ -86,16 +86,11 @@ var plant_tooltip = d3.tip()
   	    .attr('id', 'plant-tip')
   	    .offset([-10, 0])
   	    .html(p => {
-    	      return "<strong>Plant Name:</strong> <span style='color:white'>" + p.name + "</span><br>" +
-	          "<strong>Capacity:</strong> <span style='color:white'>" + Math.round(p.capacity) + " MW" + "</span>";
+    	      return "<strong>Plant Name:</strong> <span style='color:white'>" + p.name + "</span><br>" +  
+	        "<strong>Capacity:</strong> <span style='color:white'>" + Math.round(p.capacity) + " MW" + "</span><br>"+
+			"<strong>Type:</strong> <span style='color:white'>" + p.plant_type.charAt(0).toUpperCase() + p.plant_type.slice(1).replace(/_/g, " ") + "</span><br>";
   	    })
 svg.call(plant_tooltip);
-
-var new_source_tooltip = d3.tip()
-	.attr("class", "d3-tip")
-	.offset([-10, 0])
-	.html(p => console.log(p));
-
 
 // Position our loader
 var loader = d3.select(".loader")

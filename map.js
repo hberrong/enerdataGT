@@ -257,11 +257,14 @@ function reset_zoom(transition_speed=ZOOM_TRANSITION_SPEED) {
 	remove_all_data()
 
 	//uncheck check powerplants to auto load_data
+	d3.selectAll("#powerplants-selector")
+		.property('checked',false)
+
 	hide_powerplants()
 
 	//check the none checkbox
 	var check_none = d3.selectAll("#none-selector")
-  check_none.property('checked','true')
+  check_none.property('checked',true)
 
 	//hide selectors when map zoomed out
 	d3.selectAll("#data-selectors")
@@ -303,13 +306,6 @@ d3.selectAll("#title")
 	.transition()
 	.delay(ZOOM_TRANSITION_SPEED)
 	.style('display','none')
-
-
-		d3.selectAll("#instruct-1")
-			.style('display', 'none')
-
-		d3.selectAll("#instruct-2")
-		.style('display', 'block')
 
 	// show the data_selectors, new_sources, and plant_details now that a state is selected
 	d3.selectAll("#data-selectors")
@@ -707,8 +703,8 @@ function dataPlots(demand, generation, plants, state) {
 		filtered_gen = generation.filter(function(d) {return d.state == state; });
 		new_gen = plants.filter(function(d) {return d.state == state; });
 	} else {
-		filtered_gen = generation;
-		new_gen = plants;
+		filtered_gen = generation.filter(function(d) {return d; });
+		new_gen = plants.filter(function(d) {return d; });
 	}
 
 	// TOTAL current capacity

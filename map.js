@@ -41,7 +41,10 @@ var map_zoomer = d3.zoom().scaleExtent(ZOOM_CONSTRAINTS).on("zoom", zoom_map);
 var svg = d3.select("div#choropleth").append("svg")
 	.attr("id", "svg_choropleth")
 	.call(map_zoomer)
-	.on("click", reset_zoom);
+	.on("click", function (d) {
+		reset_zoom();
+		updatePlots(demand, generation, plants, "United States");
+	});
 const SVG_BOUNDS = svg.node().getBoundingClientRect();
 
 var map_g = svg.append("g").attr("id", "map");
@@ -117,8 +120,8 @@ function getMin(arr, prop) {
 	return min;
 }
 
-// Load map
-d3.json("united_states.json").then(mapData => createMap(mapData));
+ // Load map
+ d3.json("united_states.json").then(mapData => createMap(mapData));
 
 // Load other data
 Promise.all([
@@ -255,11 +258,11 @@ function createMap(us) {
 
 function reset_zoom(transition_speed=ZOOM_TRANSITION_SPEED) {
 	remove_all_data()
-
+	
 	//uncheck check powerplants to auto load_data
 	d3.selectAll("#powerplants-selector")
 		.property('checked',false)
-
+		
 	hide_powerplants()
 
 	//check the none checkbox
@@ -298,6 +301,12 @@ function reset_zoom(transition_speed=ZOOM_TRANSITION_SPEED) {
 
 // https://observablehq.com/@d3/zoom-to-bounding-box?collection=@d3/d3-zoom
 function zoom_state(state, idx, ele) {
+	remove_all_data()
+
+	//check the none checkbox
+	var check_none = d3.selectAll("#none-selector")
+  	check_none.property('checked',true)
+
 	var current_state = d3.select(this);
 	var b = d3.selectAll("#data-selectors")
 
@@ -699,12 +708,12 @@ function dataPlots(demand, generation, plants, state) {
 		circle_data.push(circle2);
 	}
 	// Get TOTAL energy for current and new capacity
-	if (state_selected != "United States") {
+	if (state != "United States") {
 		filtered_gen = generation.filter(function(d) {return d.state == state; });
 		new_gen = plants.filter(function(d) {return d.state == state; });
 	} else {
-		filtered_gen = generation.filter(function(d) {return d; });
-		new_gen = plants.filter(function(d) {return d; });
+		filtered_gen = generation.filter(f=>f)
+		new_gen = plants.filter(f=>f);
 	}
 
 	// TOTAL current capacity
